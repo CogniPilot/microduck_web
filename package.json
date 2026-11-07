@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test scripts/check-site.test.mjs",
     "check": "node scripts/check-site.mjs",
     "test:browser": "node scripts/browser-smoke.mjs",
     "serve": "node scripts/serve.mjs"

@@ -14,6 +14,7 @@ Use Node.js 22, then run:
 
 ```
 npm ci
+npm test
 npx playwright install --with-deps chromium
 npm run check
 npm run test:browser
@@ -32,6 +33,15 @@ The Pages workflow tests pull requests without deploying them. A successful main
 push or manual main run uploads the tested `site/` directory and deploys through
 the `github-pages` environment. All Actions are pinned to commits. There are no
 custom isolation headers and no service-worker workaround.
+
+An in-flight deployment is allowed to finish before a later deployment starts.
+STL assets are refused unless a committed `mesh-clearance.json` at the repository
+root records `schema_version: 1`, a nonempty `decision` reference to the explicit
+owner approval, and `files`, an object mapping every site-relative STL path to
+its SHA-256. The set and hashes must match exactly. The publisher must verify the
+decision's authority during review; this file check cannot authenticate an owner.
+No clearance record or real-mesh approval is supplied by the scaffold. The tests
+use only a synthetic mesh and a clearly labelled synthetic test approval.
 
 The scaffold fails its checks if the site packet is missing. It must be composed
 with the reviewed application and rerun before the first push. Hosted Actions and
