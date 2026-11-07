@@ -1,0 +1,12 @@
+{
+  "name": "microduck-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-site.mjs",
+    "test:browser": "node scripts/browser-smoke.mjs",
+    "serve": "node scripts/serve.mjs"
+  },
+  "devDependencies": { "playwright": "1.65.0" }
+}
