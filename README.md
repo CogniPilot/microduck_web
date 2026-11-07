@@ -43,10 +43,15 @@ Scaffold code: Apache-2.0, see LICENSE. Site dependencies retain their individua
 licenses; the application is not licensed as one undifferentiated asset bundle.
 Pollen Robotics' Microduck XML is Apache-2.0; its STL meshes at upstream revision
 `bae39f5900b318f7e87fc485c30a31213cfa14eb` are **CC BY-NC-SA 4.0**.
-Before distributing meshes, include upstream LICENSE-MODELS.md, credit Pollen
+Before distributing meshes, include upstream
+[LICENSE-MODELS.md](third_party/microduck_rl/LICENSE-MODELS.md), credit Pollen
 Robotics, link the upstream repository and license, and disclose modifications
 including any decimation. Mesh inclusion awaits the repository owner's decision.
 Pretrained-policy and other vendor licenses/provenance belong to the site packet.
+
+The verbatim upstream Microduck license texts are labelled under
+[third_party/microduck_rl](third_party/microduck_rl/README.md); they apply to that
+upstream material, rather than to every dependency in this repository.
 
 GitHub Pages workflow reference:
 https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
