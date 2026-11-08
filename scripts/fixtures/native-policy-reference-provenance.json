@@ -1,0 +1,18 @@
+{
+  "native_head": "da34a2212ae12eddfd73d0dfbf924f291aaf1dc9",
+  "scope": "Actual obs.rs compiled; target/filter loop copied verbatim into minimal wrapper. Wrapper supplies native default Walk tuning, command EMA and synthetic inputs; not the full robotd controller.",
+  "sources": [
+    {
+      "path": "duck-control/src/obs.rs",
+      "sha256": "89c139b747c932eb48fb4f2916e5d245a23f60367b33f55746fc4fb0320e8b6d"
+    },
+    {
+      "path": "duck-control/src/model.rs",
+      "sha256": "0d6f1c81ae18d928b309db5150e5a89ecf5c633c45eb593d0f87282355cab804"
+    },
+    {
+      "path": "robotd/src/control.rs",
+      "sha256": "24b7b51dc68e433ba00a12f7454161febc4fa67af971d717a2522f29e84e0488"
+    }
+  ]
+}

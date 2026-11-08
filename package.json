@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test scripts/check-site.test.mjs",
+    "test": "node --test scripts/check-site.test.mjs scripts/async-readback.test.mjs scripts/policy-interface.test.mjs",
     "check": "node scripts/check-site.mjs",
     "test:browser": "node scripts/browser-smoke.mjs",
     "serve": "node scripts/serve.mjs"
   },
-  "devDependencies": { "playwright": "1.65.0" }
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
 }

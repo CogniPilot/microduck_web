@@ -288,6 +288,8 @@ function box(size, position, color, parent) {
 
 async function initializeView() {
   const container = $('canvas');
+  let viewDirty = true;
+  const invalidate = () => { viewDirty = true; };
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#1a252c');
   scene.fog = new THREE.Fog('#1a252c', 3, 9);
@@ -303,6 +305,7 @@ async function initializeView() {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 0.13);
   controls.enableDamping = true;
+  controls.addEventListener('change', () => { viewDirty = true; });
   controls.minDistance = 0.13;
   controls.maxDistance = 5;
   scene.add(new THREE.HemisphereLight(0xf7fff1, 0x829574, 2.2));
@@ -335,7 +338,7 @@ async function initializeView() {
     wheel.castShadow = true;
     board.add(wheel);
   }
-  $('board-toggle').onchange = () => board.visible = $('board-toggle').checked;
+  $('board-toggle').onchange = () => { board.visible = $('board-toggle').checked; invalidate(); };
   $('frame-robot').onclick = () => {
     controls.target.set(0, 0, 0.13);
     camera.position.set(0.43, -0.48, 0.33);
@@ -350,29 +353,45 @@ async function initializeView() {
     renderer.setSize(width, height, false);
     camera.aspect = width / Math.max(height, 1);
     camera.updateProjectionMatrix();
+    viewDirty = true;
   };
   new ResizeObserver(resize).observe(container);
   resize();
-  let sensorPreview;
+  let sensorPreview, sensorReadPending = false, lastSensorStatus = -Infinity, sensorGeneration = 0;
+  const sensorToggle = $('sensor-rendering');
+  sensorToggle.onchange = () => {
+    sensorGeneration++; renderedFrame = undefined;
+    $('sensor-status').textContent = sensorToggle.checked ? 'Starting camera / ToF…' : 'Rendering off · enable to view camera / ToF.';
+  };
   renderer.setAnimationLoop(now => {
     controls.update();
-    renderer.render(scene, camera);
-    if (sensorPreview) {
-      try {
-        const frame = sensorPreview.capture(now);
-        if (frame) {
+    if (viewDirty) { renderer.render(scene, camera); viewDirty = false; }
+    if (sensorToggle.checked && sensorPreview && !sensorReadPending) {
+      sensorReadPending = true;
+      const preview = sensorPreview, generation = sensorGeneration;
+      preview.capture(now).then(frame => {
+        if (frame && sensorToggle.checked && generation === sensorGeneration) {
           renderedFrame = frame;
-          $('sensor-status').textContent = 'Three.js pose preview · RGB 320×240 · ToF 8×8, 0–4 m · sensor-site frames';
-          $('rendered-ranges').textContent = JSON.stringify({ranges_m:frame.ranges, valid:frame.valid}, null, 2);
+          if (now - lastSensorStatus >= 250) {
+            lastSensorStatus = now;
+            $('sensor-status').textContent = 'Three.js · RGB ' + preview.stats.cameraFps.toFixed(1) + '/30 fps · ToF ' + preview.stats.tofHz.toFixed(1) + '/15 Hz · 0–4 m';
+            $('sensor-status').title = preview.stats.renderer;
+            $('rendered-ranges').textContent = JSON.stringify({ranges_m:frame.ranges, valid:frame.valid}, null, 2);
+          }
         }
-      } catch (error) { $('sensor-status').textContent = 'Sensor rendering unavailable: ' + error.message; sensorPreview = undefined; }
+      }).catch(error => {
+        $('sensor-status').textContent = 'Sensor rendering unavailable: ' + error.message;
+        sensorPreview = undefined;
+      }).finally(() => { sensorReadPending = false; });
     }
   });
-  const sensors = await loadRobot(scene);
+  const sensors = await loadRobot(scene, invalidate);
   if (sensors.camera && sensors.tof) sensorPreview = createSensorPreview(renderer, scene, sensors.camera, sensors.tof, $('camera-frame'), $('lidar-frame'));
+  globalThis.microduckSensorStats = sensorPreview?.stats;
+  invalidate();
 }
 
-async function loadRobot(scene) {
+async function loadRobot(scene, invalidate) {
   const response = await fetch('./robot.xml');
   if (!response.ok) throw new Error('Robot description could not be loaded');
   const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
@@ -479,6 +498,7 @@ async function loadRobot(scene) {
       joint.q = Number(slider.value);
       joint.pivot.quaternion.setFromAxisAngle(joint.axis, joint.q);
       output.value = (joint.q * 180 / Math.PI).toFixed(0) + '°';
+      invalidate();
     };
     slider.oninput = update;
     joint.reset = () => { slider.value = String(joint.initial); update(); };
@@ -512,12 +532,14 @@ async function loadRobot(scene) {
         object.quaternion.setFromRotationMatrix(matrix);
       });
       document.querySelectorAll('#joints input, #reset-pose').forEach(input => input.disabled = true);
+      invalidate();
     },
     restore() {
       for (const {visuals, parent} of visualBodies.values()) {
         parent.add(visuals); visuals.position.set(0,0,0); visuals.quaternion.identity();
       }
       document.querySelectorAll('#joints input, #reset-pose').forEach(input => input.disabled = false);
+      invalidate();
     }
   };
   $('prepare-simulation').disabled = false;
