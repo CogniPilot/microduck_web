@@ -1,7 +1,7 @@
 # Microduck demo
 
 Browser Modelica demo intended for
-`https://cognipilot.github.io/microduck-demo/`.
+`https://cognipilot.github.io/microduck_web/`.
 
 The static application is in `site/`, with vendor files, source manifests, licence notices and model/policy provenance. This is a static deployment: there is no service or API key.
 
@@ -18,7 +18,7 @@ npm run test:browser
 npm run serve
 ```
 
-Open `http://127.0.0.1:8080/microduck-demo/`. The Chromium check serves that project
+Open `http://127.0.0.1:8080/microduck_web/`. The Chromium check serves that project
 prefix without COOP/COEP, confirms SharedArrayBuffer is unavailable, runs actual
 single-thread WASM policy inference, prepares the robot and advances physics by
 20 ms. This is a hosting compatibility check, not walking qualification.

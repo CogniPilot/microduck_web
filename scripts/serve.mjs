@@ -7,7 +7,7 @@ import {pathToFileURL} from 'node:url';
 // A project Pages prefix, with no cross-origin isolation headers.
 export async function serve(root, port = 0) {
   root = await realpath(root);
-  const prefix = '/microduck-demo/';
+  const prefix = '/microduck_web/';
   const types = {'.html':'text/html', '.js':'text/javascript', '.mjs':'text/javascript',
     '.css':'text/css', '.json':'application/json', '.wasm':'application/wasm',
     '.xml':'application/xml', '.svg':'image/svg+xml', '.png':'image/png'};
