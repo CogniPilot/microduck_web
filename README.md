@@ -1,7 +1,7 @@
 # Microduck demo
 
 Browser Modelica demo intended for
-[https://cognipilot.github.io/microduck_web/](https://cognipilot.github.io/microduck_web/])
+[https://cognipilot.github.io/microduck_web](https://cognipilot.github.io/microduck_web)
 
 The static application is in `site/`, with vendor files, source manifests, licence notices and model/policy provenance. This is a static deployment: there is no service or API key.
 
