@@ -5,14 +5,14 @@ package MicroduckMechanics "Tutorial articulation helpers; no benchmark fixture 
     Real c[3];
     Real I[3,3];
   end MassProperties;
+  // Reflected inertia is owned by the Revolute joint; this block applies command torque.
   model Drive "Rotor inertia and a commanded shaft torque"
     Modelica.Mechanics.Rotational.Interfaces.Flange_b flange;
-    parameter Real armature = 0.0018;
     input Real command;
     Real velocity;
   equation
     velocity = der(flange.phi);
-    flange.tau = armature*der(velocity)-command;
+    flange.tau = -command;
   end Drive;
 
   function tensor

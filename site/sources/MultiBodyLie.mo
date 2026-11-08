@@ -602,12 +602,14 @@ package MultiBodyLie "MSL MultiBody rewritten on articulated-body connectors (la
       parameter Boolean useAxisFlange = false;
       parameter Boolean animation = true "Ignored: no animation";
       parameter Real n[3] = {0, 0, 1};
+      parameter Real armature(min = 0, unit = "kg.m2") = 0
+        "Reflected rotor inertia about the joint coordinate";
       parameter StateSelect stateSelect = StateSelect.prefer;
       final parameter Real e[3] = Modelica.Math.Vectors.normalizeWithAssert(n) "Unit vector in direction of rotation axis, resolved in frame_a (MSL: asserts length(n) > 0)";
       Real phi(start = 0, stateSelect = stateSelect) "Rotation of frame_b relative to frame_a about e";
       Real w(start = 0, stateSelect = stateSelect);
       Real a "= der(w)";
-      Real tau "Driving torque";
+      Real tau(unit="N.m") "Net shaft torque after accelerating the reflected rotor";
     protected
       // Pure rotation: X = diag(E, E) (frame_b <- frame_a), applied blockwise; X' S X by Math.rotateInertia.
       Real E[3, 3] = transpose(LieGroups.SO3.Dcm.exp_map(e * phi)) "frame_b <- frame_a";
@@ -622,11 +624,13 @@ package MultiBodyLie "MSL MultiBody rewritten on articulated-body connectors (la
       Real u;
       Real Ia[6, 6];
       Real pa[6];
+    initial equation
+      assert(armature >= 0, "Revolute armature must be nonnegative");
     equation
       Connections.branch(frame_a.R, frame_b.R);
       axis.phi = phi;
       support.phi = 0;
-      tau = axis.tau;
+      tau = axis.tau - armature * a "Net shaft torque after accelerating the reflected rotor";
       w = der(phi);
       a = der(w);
       if Connections.rooted(frame_a.R) then
@@ -664,8 +668,8 @@ package MultiBodyLie "MSL MultiBody rewritten on articulated-body connectors (la
       end if;
       c = cat(1, cross(Vc[1:3], S[1:3] * w), cross(Vc[4:6], S[1:3] * w)) "crm(Vc) (S w) with S = {+-e, 0}";
       U = IAc * S;
-      D = S * U;
-      u = tau - S * pAc;
+      D = S * U + armature;
+      u = axis.tau - S * pAc;
       Ia = IAc - {{U[i] * U[j] for j in 1:6} for i in 1:6} / D;
       pa = pAc + Ia * c + U * (u / D);
       a = (u - U * (ap + c)) / D;

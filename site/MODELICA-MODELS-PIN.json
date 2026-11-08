@@ -2,5 +2,10 @@
   "repository": "https://github.com/CogniPilot/modelica_models",
   "branch": "packed-symmetric-matrix-multibodylie",
   "commit": "6c6c763a16d3013cd880a697368717509dc559a5",
-  "scope": "Unchanged shared Modelica sources; subset plus transitive mathematical packages"
+  "scope": "Shared upstream Modelica subset plus a local Revolute armature extension for Microduck; other upstream mathematical packages remain unchanged.",
+  "local_changes": {
+    "path": "sources/MultiBodyLie.mo",
+    "description": "Add nonnegative reflected joint armature to the articulated-body elimination; preserve net shaft torque as axis.tau - armature*a. Default zero retains existing users.",
+    "canonical_library_followup": "MM25/MD-A modelica_models work; this website patch precedes that library landing."
+  }
 }

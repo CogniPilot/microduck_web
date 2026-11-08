@@ -355,21 +355,23 @@ package MicroduckComponents "Editable component defaults for the Microduck assem
     parameter Real friction=0.0048;
     parameter Real torqueLimit=0.96;
     input Real action;
+    input Boolean usePositionTarget=false;
+    input Real positionTarget=home;
     MB.Interfaces.Frame_a frame_a;
     MB.Interfaces.Frame_b frame_b;
     output Real phi;
     output Real w;
     output Real target;
     output Real torque;
-    MB.Joints.Revolute joint(n=n,useAxisFlange=true,phi(start=home,fixed=true),w(start=0,fixed=true));
-    MicroduckMechanics.Drive rotor(armature=armature);
+    MB.Joints.Revolute joint(n=n,useAxisFlange=true,armature=armature,phi(start=home,fixed=true),w(start=0,fixed=true));
+    MicroduckMechanics.Drive rotor;
   equation
     connect(frame_a,joint.frame_a);
     connect(joint.frame_b,frame_b);
     connect(rotor.flange,joint.axis);
     phi=joint.phi;
     w=joint.w;
-    target=max(minimum,min(maximum,commandCentre+0.5*(maximum-minimum)*max(-1,min(1,action))));
+    target=max(minimum,min(maximum,if usePositionTarget then positionTarget else commandCentre+0.5*(maximum-minimum)*max(-1,min(1,action))));
     torque=max(-torqueLimit,min(torqueLimit,kp*(target-phi)));
     rotor.command=torque-damping*w-friction*tanh(w/0.01)
       +20*max(0,minimum-phi)-20*max(0,phi-maximum);
