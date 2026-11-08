@@ -3,6 +3,7 @@ import init, * as compiler from './model-runtime.js';
 import {createModelSession,readCompressedArtifact} from './prebuilt-session.js';
 import * as ort from './vendor/onnxruntime-1.31.1/ort.js';
 import {poseFrame} from './policy-contract.js';
+import {checkControllerInputs} from './model-inputs.js';
 ort.env.wasm.numThreads=1;
 ort.env.wasm.wasmPaths={mjs:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.js',import.meta.url).href,wasm:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.wasm',import.meta.url).href};
 let session, controller, initialized, policy, lastValues;
@@ -31,7 +32,7 @@ async function execute(message){
   const controlStart=performance.now(),control=await make('MicroduckPolicyInterface');controller=control.session;
   const plantStart=performance.now(),plant=await make(model);session=plant.session;
   const preparation={controller:control.mode,plant:plant.mode,controller_ms:plantStart-controlStart,plant_ms:performance.now()-plantStart,total_ms:performance.now()-started};
-  try{const frame=snapshot();frame.preparation=preparation;frame.execution=JSON.parse(session.execution_receipt_json());return frame;}catch(error){session.free();session=undefined;throw error;}
+  try{checkControllerInputs(JSON.parse(controller.input_names()));const frame=snapshot();frame.preparation=preparation;frame.execution=JSON.parse(session.execution_receipt_json());return frame;}catch(error){session.free();controller.free();session=undefined;controller=undefined;throw error;}
  }
  if(!session)throw Error('Prepare the Modelica simulation first.');
  let control;
