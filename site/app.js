@@ -4,6 +4,7 @@ import { STLLoader } from './vendor/STLLoader.js';
 import { createSensorPreview } from './sensor-preview.js';
 import { sensorInputs } from './sensor-inputs.js';
 import { createWalkingControls } from './walking-controls.js';
+import {modelDrafts} from './model-drafts.js';
 
 const $ = id => document.getElementById(id);
 let robotView;
@@ -50,14 +51,14 @@ async function showPhysics(command) {
   physicsTime = state.time;
   showSensors(state);
   $('view-mode').textContent = 'Modelica simulation · t = ' + state.time.toFixed(3) + ' s';
-  $('simulation-status').textContent = state.control ? 'Pretrained Pollen velstand · Modelica physics.' : 'Standing controller · Modelica physics.';
+  $('simulation-status').textContent = state.preparation ? (state.preparation.plant==='prebuilt'&&state.preparation.controller==='prebuilt'?'Simulation ready · compiled models loaded.':'Simulation ready · edited source compiled.') : state.control ? 'Pretrained Pollen velstand · Modelica physics.' : 'Standing controller · Modelica physics.';
   return state;
 }
 $('prepare-simulation').onclick = async () => {
   if (!robotView) return;
   $('prepare-simulation').disabled = true;
   $('stop-simulation').disabled = false;
-  $('simulation-status').textContent = 'Compiling and preparing the complete robot in browser WASM…';
+  $('simulation-status').textContent = 'Preparing simulation · default models are precompiled…';
   try {
     await globalThis.microduckSourcesReady;
     physicsWorker = new Worker(new URL('./physics.worker.js', import.meta.url), {type: 'module'});
@@ -145,9 +146,20 @@ $('stage-description').textContent = stages[0][1];
 
 const sourceFiles = await (await fetch('./sources/manifest.json')).json();
 const originals = new Map();
+const drafts = modelDrafts({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)});
+const previousDrafts = drafts.previous(sourceFiles);
+if(Object.keys(previousDrafts).length){
+  $('previous-drafts').hidden=false;
+  $('download-previous-drafts').onclick=()=>{
+    const data=JSON.stringify({format:'microduck-modelica-drafts',version:2,files:previousDrafts},null,2);
+    const url=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+    const link=document.createElement('a');link.href=url;link.download='microduck-previous-drafts.json';link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+}
 let selectedFile = 'Microduck.mo';
 function savedDraft(name) {
-  try { return localStorage.getItem('microduck-lab-draft-v2-named:' + name); }
+  try { return drafts.get(name); }
   catch { return null; }
 }
 async function loadSource(name) {
@@ -215,12 +227,12 @@ $('source-file').onchange = () => {
 $('editor').oninput = () => {
   updateFileSelection();
   try {
-    localStorage.setItem('microduck-lab-draft-v2-named:' + selectedFile, $('editor').value);
+    drafts.set(selectedFile, $('editor').value);
     $('editor-status').textContent = 'Draft saved in this browser.';
   } catch { $('editor-status').textContent = 'Draft is in this tab; use Download to keep it.'; }
 };
 $('reset-file').onclick = async () => {
-  try { localStorage.removeItem('microduck-lab-draft-v2-named:' + selectedFile); } catch {}
+  try { drafts.remove(selectedFile); } catch {}
   await loadSource(selectedFile);
 };
 $('download-file').onclick = () => {

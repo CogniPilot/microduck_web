@@ -11,6 +11,7 @@ Use Node.js 22, then run:
 
 ```
 npm ci
+npm run build:prebuilt
 npm test
 npx playwright install --with-deps chromium
 npm run check
@@ -63,3 +64,5 @@ https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-
 ## Current application
 
 The current application is in site/. See site/README.md for controls, physics architecture, current performance and licences. It supports keyboard and hold-to-drive touch buttons; the gait remains in progress. The external pretrained policy is ONNX; Modelica-native training is future work.
+
+Saved Modelica drafts use a versioned walking-input contract. Drafts from the earlier site are retained separately and can be downloaded with the editor notice; they no longer override the updated default model. A custom interface missing required inputs is refused during preparation with a Restore file instruction, before walking begins.

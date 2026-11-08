@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "models": {
+    "Microduck": {
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"8583646acddb\",\"model_name\":\"Microduck\",\"source_sha256\":\"bca88b3f4e9b28f35d04d914a8d1af639982480b7829276232419c4c82a3636e\",\"sources_sha256\":\"bae407125b8df4fc2b687d1a4c2c9c5fa71f3e2b7a265881845b34adf6acc2ad\"}",
+      "artifact": "Microduck.json.gz",
+      "bytes": 665922,
+      "uncompressed_bytes": 12348372,
+      "sha256": "398b80e3e553c4efeadaf67c69f397feccbaa8821c7f1e178e5cfebd8ae2c3b4",
+      "uncompressed_sha256": "a3d46ff27d2e3804142cdbcade4efdfaeb4f64f9b3c7499779d09efeedff79a0"
+    },
+    "MicroduckPolicyInterface": {
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"8583646acddb\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"40d2e60f40f007f46507429b24559f05f6f2d1de1096526cf333f536a4a99fdc\",\"sources_sha256\":\"8063f8307260c013f64480c21bb7b29ce63e28918a66e139a8c9e3812700875a\"}",
+      "artifact": "MicroduckPolicyInterface.json.gz",
+      "bytes": 264014,
+      "uncompressed_bytes": 1609986,
+      "sha256": "5bd265180e67480425b77ca3b677878f88fea815073edfef4162b521e2897c4a",
+      "uncompressed_sha256": "f17acb7c949da6e0e21eb7749d9bff09c058b179a71c402ddb3960678e06a2d8"
+    }
+  }
+}

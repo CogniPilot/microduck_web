@@ -1,7 +1,9 @@
 // Modelica owns physics; the pretrained policy supplies actuator commands.
-import init, * as compiler from './vendor/rumoca-b2cb0f02-release/rumoca_bind_wasm.js';
+import init, * as compiler from './model-runtime.js';
+import {createModelSession,readCompressedArtifact} from './prebuilt-session.js';
 import * as ort from './vendor/onnxruntime-1.31.1/ort.js';
 import {poseFrame} from './policy-contract.js';
+import {checkControllerInputs} from './model-inputs.js';
 ort.env.wasm.numThreads=1;
 ort.env.wasm.wasmPaths={mjs:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.js',import.meta.url).href,wasm:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.wasm',import.meta.url).href};
 let session, controller, initialized, policy, lastValues;
@@ -21,16 +23,16 @@ async function execute(message){
   initialized??=init();await initialized;
   const standard=await(await fetch('./msl-sources.json')).json();
   const sources={...standard,...message.sources},model=message.model??'Microduck',source=sources[model+'.mo'];
-  if(!source)throw Error('Missing model source: '+model);delete sources[model+'.mo'];
-  const controllerSource=sources['MicroduckPolicyInterface.mo'];delete sources['MicroduckPolicyInterface.mo'];
-  const loaded=JSON.parse(compiler.sync_workspace_sources(JSON.stringify(sources)));
-  if(loaded.error_count)throw Error('Could not load Modelica sources: '+loaded.skipped_files.join(', '));
+  if(!source)throw Error('Missing model source: '+model);
   session?.free();controller?.free();session=undefined;controller=undefined;lastValues=undefined;previous=new Float32Array(14);previousCommand=new Float64Array(3);previousPosition=undefined;
-  // Same configuration surface as slam_web: Rumoca owns solver and live inputs.
-  controller=compiler.WasmSimulationSession.withInteractiveConfiguration(
-   controllerSource,'MicroduckPolicyInterface',JSON.stringify(configuration));
-  session=compiler.WasmSimulationSession.withInteractiveConfiguration(source,model,JSON.stringify(configuration));
-  try{const frame=snapshot();frame.execution=JSON.parse(session.execution_receipt_json());return frame;}catch(error){session.free();session=undefined;throw error;}
+  const started=performance.now(),response=await fetch('./prebuilt/manifest.json');
+  if(!response.ok)throw Error('Precompiled model manifest is unavailable.');
+  const manifest=await response.json();
+  const make=name=>createModelSession({compiler,sources,model:name,options:configuration,manifest,readArtifact:name=>readCompressedArtifact(new URL('./prebuilt/'+name,import.meta.url))});
+  const controlStart=performance.now(),control=await make('MicroduckPolicyInterface');controller=control.session;
+  const plantStart=performance.now(),plant=await make(model);session=plant.session;
+  const preparation={controller:control.mode,plant:plant.mode,controller_ms:plantStart-controlStart,plant_ms:performance.now()-plantStart,total_ms:performance.now()-started};
+  try{checkControllerInputs(JSON.parse(controller.input_names()));const frame=snapshot();frame.preparation=preparation;frame.execution=JSON.parse(session.execution_receipt_json());return frame;}catch(error){session.free();controller.free();session=undefined;controller=undefined;throw error;}
  }
  if(!session)throw Error('Prepare the Modelica simulation first.');
  let control;
