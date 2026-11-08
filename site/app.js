@@ -296,7 +296,7 @@ async function initializeView() {
   const camera = new THREE.PerspectiveCamera(40, 1, 0.005, 20);
   camera.up.set(0, 0, 1);
   camera.position.set(0.43, -0.48, 0.33);
-  const renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
+  const renderer = new THREE.WebGLRenderer({antialias: false, alpha: false});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;

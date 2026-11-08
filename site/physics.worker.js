@@ -13,8 +13,7 @@ function routed(values,output,input,count){
 }
 function snapshot(){
  const state=JSON.parse(session.state_json());lastValues=state.values;
- const frame=poseFrame(state.values,state.time);
- frame.outputs=Object.fromEntries(Object.entries(state.values).filter(([name])=>/^(cameraTimestamp$|lidarRange\[|lidarValid\[|lidarTimestamp$|imageCentroid\[|imageTargetVisible$|nearestObstacle$|trunkGyro\[|trunkAcceleration\[|headGyro\[|headAcceleration\[|jointPosition\[|jointVelocity\[|commandedPosition\[|motorTorque\[|estimatedCurrent\[|estimatedTemperature\[|stateOfCharge$|score$|fallen$)/.test(name)));
+ const frame=poseFrame(state.values,state.time,/^(cameraTimestamp$|lidarRange\[|lidarValid\[|lidarTimestamp$|imageCentroid\[|imageTargetVisible$|nearestObstacle$|trunkGyro\[|trunkAcceleration\[|headGyro\[|headAcceleration\[|jointPosition\[|jointVelocity\[|commandedPosition\[|motorTorque\[|estimatedCurrent\[|estimatedTemperature\[|stateOfCharge$|score$|fallen$)/);
  return frame;
 }
 async function execute(message){
