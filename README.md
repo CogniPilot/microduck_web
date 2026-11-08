@@ -11,6 +11,7 @@ Use Node.js 22, then run:
 
 ```
 npm ci
+npm run build:prebuilt
 npm test
 npx playwright install --with-deps chromium
 npm run check

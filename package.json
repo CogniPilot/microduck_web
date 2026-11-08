@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test scripts/check-site.test.mjs scripts/async-readback.test.mjs scripts/policy-interface.test.mjs scripts/policy-contract.test.mjs",
+    "test": "node --test scripts/check-site.test.mjs scripts/async-readback.test.mjs scripts/policy-interface.test.mjs scripts/policy-contract.test.mjs scripts/prebuilt-session.test.mjs",
     "check": "node scripts/check-site.mjs",
     "test:browser": "node scripts/browser-smoke.mjs",
-    "serve": "node scripts/serve.mjs"
+    "serve": "node scripts/serve.mjs",
+    "build:prebuilt": "node scripts/export-prebuilt.mjs"
   },
   "devDependencies": {
     "playwright": "1.65.0"

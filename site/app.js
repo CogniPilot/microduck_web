@@ -50,14 +50,14 @@ async function showPhysics(command) {
   physicsTime = state.time;
   showSensors(state);
   $('view-mode').textContent = 'Modelica simulation · t = ' + state.time.toFixed(3) + ' s';
-  $('simulation-status').textContent = state.control ? 'Pretrained Pollen velstand · Modelica physics.' : 'Standing controller · Modelica physics.';
+  $('simulation-status').textContent = state.preparation ? (state.preparation.plant==='prebuilt'&&state.preparation.controller==='prebuilt'?'Simulation ready · compiled models loaded.':'Simulation ready · edited source compiled.') : state.control ? 'Pretrained Pollen velstand · Modelica physics.' : 'Standing controller · Modelica physics.';
   return state;
 }
 $('prepare-simulation').onclick = async () => {
   if (!robotView) return;
   $('prepare-simulation').disabled = true;
   $('stop-simulation').disabled = false;
-  $('simulation-status').textContent = 'Compiling and preparing the complete robot in browser WASM…';
+  $('simulation-status').textContent = 'Preparing simulation · default models are precompiled…';
   try {
     await globalThis.microduckSourcesReady;
     physicsWorker = new Worker(new URL('./physics.worker.js', import.meta.url), {type: 'module'});

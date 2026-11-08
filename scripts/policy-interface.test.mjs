@@ -1,10 +1,10 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';
-import init,* as compiler from '../site/vendor/rumoca-b2cb0f02-release/rumoca_bind_wasm.js';
+import init,* as compiler from '../site/model-runtime.js';
 import test from 'node:test';
 test('native Walk observation and target fixtures match the Modelica interface',async()=>{
 const site=new URL('../site',import.meta.url).pathname;
 
-await init({module_or_path:fs.readFileSync(site+'/vendor/rumoca-b2cb0f02-release/rumoca_bind_wasm_bg.wasm')});
+await init({module_or_path:fs.readFileSync(compiler.WASM_URL)});
 const source=fs.readFileSync(site+'/sources/MicroduckPolicyInterface.mo','utf8');
 const session=compiler.WasmSimulationSession.withInteractiveConfiguration(source,'MicroduckPolicyInterface',JSON.stringify({dt:.002,solver:'rk-like',atol:1e-8,rtol:1e-6,execution_policy:'auto',initial_inputs:[],parameters:{}}));
 const route=(name,a)=>a.map((x,i)=>[name+'['+(i+1)+']',x]);const joints=[0,1,2,3,4,5,6,7,8,10,11,12,13,14];const f32bits=x=>{const f=new Float32Array([x]);return new Uint32Array(f.buffer)[0]};
