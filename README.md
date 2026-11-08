@@ -1,12 +1,9 @@
 # Microduck demo
 
-Repository scaffold for the browser Modelica demo at
+Browser Modelica demo intended for
 `https://cognipilot.github.io/microduck-demo/`.
 
-The separately reviewed static application belongs in `site/`. It is deliberately
-not included in the scaffold commit. Import the approved site packet with its
-vendor files, source manifests, license notices and model/policy provenance
-before publishing. This is a static deployment: there is no service or API key.
+The static application is in `site/`, with vendor files, source manifests, licence notices and model/policy provenance. This is a static deployment: there is no service or API key.
 
 ## Run locally
 
@@ -40,12 +37,9 @@ root records `schema_version: 1`, a nonempty `decision` reference to the explici
 owner approval, and `files`, an object mapping every site-relative STL path to
 its SHA-256. The set and hashes must match exactly. The publisher must verify the
 decision's authority during review; this file check cannot authenticate an owner.
-No clearance record or real-mesh approval is supplied by the scaffold. The tests
-use only a synthetic mesh and a clearly labelled synthetic test approval.
+The application payload supplies the exact real-mesh inventory and owner decision reference. The tests use only a synthetic mesh and a clearly labelled synthetic test approval.
 
-The scaffold fails its checks if the site packet is missing. It must be composed
-with the reviewed application and rerun before the first push. Hosted Actions and
-the real Pages URL still need verification after publication.
+The checks fail if the site is missing. Hosted Actions and the real Pages URL still need verification after publication.
 
 ## Licenses
 
@@ -56,7 +50,7 @@ Pollen Robotics' Microduck XML is Apache-2.0; its STL meshes at upstream revisio
 Before distributing meshes, include upstream
 [LICENSE-MODELS.md](third_party/microduck_rl/LICENSE-MODELS.md), credit Pollen
 Robotics, link the upstream repository and license, and disclose modifications
-including any decimation. Mesh inclusion awaits the repository owner's decision.
+including any decimation. The included mesh-clearance.json records the publish decision and all43 exact hashes. No local decimation or other mesh modification was performed.
 Pretrained-policy and other vendor licenses/provenance belong to the site packet.
 
 The verbatim upstream Microduck license texts are labelled under
@@ -65,3 +59,7 @@ upstream material, rather than to every dependency in this repository.
 
 GitHub Pages workflow reference:
 https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+
+## Current application
+
+The current application is in site/. See site/README.md for controls, physics architecture, current performance and licences. It supports keyboard and hold-to-drive touch buttons; the gait remains in progress. The external pretrained policy is ONNX; Modelica-native training is future work.

@@ -1,0 +1,14 @@
+{
+  "name": "microduck-editor-build",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cognipilot/rumoca": "0.10.3",
+    "monaco-editor": "0.55.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6"
+  }
+}

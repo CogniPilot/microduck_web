@@ -1,0 +1,1 @@
+Editor integration source for the bundled static assets. Install with npm ci, then npx vite build. The compiler assets remain separately pinned under site/vendor. Copy the generated editor entry, editor-assets and worker assets into site when rebuilding. See site/SLAM-WEB-LICENSE for the upstream editor integration licence.

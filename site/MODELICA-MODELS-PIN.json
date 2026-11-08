@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/CogniPilot/modelica_models",
+  "branch": "packed-symmetric-matrix-multibodylie",
+  "commit": "6c6c763a16d3013cd880a697368717509dc559a5",
+  "scope": "Unchanged shared Modelica sources; subset plus transitive mathematical packages"
+}

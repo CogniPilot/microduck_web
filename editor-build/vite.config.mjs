@@ -1,0 +1,1 @@
+import {defineConfig} from 'vite'; export default defineConfig({base:'./',build:{outDir:'build',emptyOutDir:true,rollupOptions:{input:'src/editor-entry.ts',output:{entryFileNames:'editor.js',assetFileNames:'editor-assets/[name][extname]',chunkFileNames:'editor-assets/[name]-[hash].js'}}},worker:{format:'es'}});

@@ -1,0 +1,27 @@
+[
+  {
+    "url": "https://huggingface.co/pollen-robotics/microduck-policies/resolve/283771bcb3690a0a94a288c108365d9b630d21e4/manifest.json",
+    "sha256": "5c6a73f95f388f131aaef570f6113f0d36b84a72d5755662cd57e67adf7fd24c",
+    "bytes": 2638
+  },
+  {
+    "url": "https://huggingface.co/pollen-robotics/microduck-policies/resolve/283771bcb3690a0a94a288c108365d9b630d21e4/README.md",
+    "sha256": "491b39e6bd8ddb2840c7d12a39650331ef87412aa46d834980d8076504f5b8e7",
+    "bytes": 75
+  },
+  {
+    "url": "https://huggingface.co/pollen-robotics/microduck-policies/resolve/283771bcb3690a0a94a288c108365d9b630d21e4/alpha_walking.onnx",
+    "sha256": "e36332d383997d51401897734cd3e79cf5038406feddb18b4d57ecfb141daa6c",
+    "bytes": 793705
+  },
+  {
+    "url": "https://huggingface.co/pollen-robotics/microduck-policies/resolve/283771bcb3690a0a94a288c108365d9b630d21e4/alpha_stand.onnx",
+    "sha256": "1569268713e40deea795dd2922dba50d3621e15a872855408b6b1b125b1c094b",
+    "bytes": 793705
+  },
+  {
+    "url": "https://huggingface.co/pollen-robotics/microduck-policies/resolve/283771bcb3690a0a94a288c108365d9b630d21e4/velstand.onnx",
+    "sha256": "ce894d30b3343036d499bfac1102bdaa58d59a21c1b58401ecb70fb6a2f63e0a",
+    "bytes": 793705
+  }
+]

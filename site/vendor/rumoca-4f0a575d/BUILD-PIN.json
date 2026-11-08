@@ -1,0 +1,14 @@
+{
+  "source_base": "c135adacfbeeb907116e6ab6846c35d493440304",
+  "source_tree": "d1f1fbb70660bcc0357b7c410a626c54c8e75ae1",
+  "resulting_commit": "4f0a575d38d3df824c76792cb59526f002588a4f",
+  "embedded_identity": "c135adacfbee-dirty",
+  "scope": "local author build, full-web, opt1/debug0",
+  "full_robot_native_and_wasm_smoke": "PASS, no walking claim",
+  "files": {
+    "rumoca_bind_wasm.d.ts": "1fbf921e89b41ef9d40c4b50ab778c4b2b442f682283563f764f7bb5cb3e728d",
+    "rumoca_bind_wasm_bg.wasm": "6e6480fa7158402d914db7f3d5bfdee0f74dff094176b1a90c75f0a5c315a713",
+    "rumoca_bind_wasm_bg.wasm.d.ts": "f544b290835f0b3f096483a214de005de79c4c9827d7252a1c01f64d55dbf38e",
+    "rumoca_bind_wasm.js": "11a87677623b945978f080a7b74de3ea9162e7b87d5c82bdc07a2510e3c27161"
+  }
+}
