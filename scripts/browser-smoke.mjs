@@ -43,7 +43,7 @@ try {
       return {count:actions.length, finite:true, numThreads:ort.env.wasm.numThreads};
     } finally {await session.release();}
   });
-  await page.locator('#prepare-simulation').click();
+  await page.locator('#enter-scene').click();
   await page.waitForFunction(() => !document.querySelector('#step-simulation').disabled ||
     /unavailable|failed|exceeded/i.test(document.querySelector('#simulation-status').textContent), null, {timeout:360000});
   result.simulation_status = await page.locator('#simulation-status').innerText();
