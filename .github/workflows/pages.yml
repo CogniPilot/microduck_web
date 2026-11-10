@@ -38,7 +38,7 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 30
     permissions:
       pages: write
       id-token: write
@@ -50,3 +50,5 @@ jobs:
       - name: Deploy tested site
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          timeout: '1800000' # 30 minutes, in milliseconds
