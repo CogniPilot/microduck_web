@@ -16,7 +16,7 @@ Pollen's scene/loader code and robot MJCF are Apache-2.0. The viewer loads polle
 
 The pretrained velstand.onnx comes from pollen-robotics/microduck-policies at283771bcb3690a0a94a288c108365d9b630d21e4 (Apache-2.0). policies/DOWNLOADS.json retains URLs and hashes; only velstand.onnx is bundled, while the unmodified upstream manifest describes additional policies not included here.
 
-Physics uses the exact release build pinned in vendor/rumoca-8583646a-release/BUILD-PIN.json. The editor retains its separately pinned older runtime. The Modelica source/dependency pins are retained alongside the source manifest.
+Physics and the Modelica editor share the exact release build pinned in vendor/rumoca-8583646a-release/BUILD-PIN.json. The older editor runtime is no longer published. The Modelica source/dependency pins are retained alongside the source manifest.
 
 The stateless Modelica policy adapter matches native robotd Walk defaults: command EMA0.2, raw action scale0.9, head/leg target low-pass0.5/0.7,61 observations and14 raw actions at50Hz. JavaScript holds the previous Modelica outputs between ticks. Absolute proposed targets go directly to the Modelica servos, which retain physical joint limits. The separate mouth stays closed. Optional native skills, alternate policies and hardware safety/servo calibration are outside this walking demo.
 
