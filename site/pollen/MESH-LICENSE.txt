@@ -1,0 +1,22 @@
+Microduck visual geometry
+Copyright Pollen Robotics
+
+Microduck GLB taken byte-for-byte from:
+https://huggingface.co/spaces/pollen-robotics/microduck-simulator
+Revision efedf47f4d4ae52d17ad2e108a5b8795d41537a3
+File app/public/robot/mjlab/microduck.glb
+SHA-256 ad0b8d1c886a857fd09d337be11e731f4ac72bf099b0af63081031f97ed6eadb
+
+This is a converted visual representation of the Pollen Microduck robot meshes.
+It is distributed under Creative Commons Attribution-NonCommercial-ShareAlike
+4.0 International (CC BY-NC-SA 4.0), retaining the robot mesh terms rather
+than treating the Space's application-code Apache-2.0 license as a mesh grant.
+
+Robot source: https://github.com/pollen-robotics/microduck_rl
+License notice: https://github.com/pollen-robotics/microduck_rl/blob/develop/LICENSE-MODELS.md
+License summary: https://creativecommons.org/licenses/by-nc-sa/4.0/
+Legal code: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+The GLB is not modified in this port. The viewer rebuilds creased normals at
+load time using the source simulator's procedure. No collision model is
+derived from these visual meshes in this application.

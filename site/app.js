@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
-import { STLLoader } from './vendor/STLLoader.js';
+import {loadPollenGeometries} from './pollen/geometry.js';
+import {createPollenScene} from './pollen/scene.js';
+import {createSceneShell} from './pollen/shell.js';
+import {createModelicaPoseView} from './pollen/pose-view.js';
+import {createCameraFollower} from './pollen/camera-follow.js';
+import {VARIANTS,DEFAULT_VARIANT,materialHookFor} from './pollen/variants.js';
 import { createSensorPreview } from './sensor-preview.js';
 import { sensorInputs } from './sensor-inputs.js';
 import { createWalkingControls } from './walking-controls.js';
@@ -337,77 +342,28 @@ function transform(object, element) {
   const [w, x, y, z] = vector(element.getAttribute('quat'), [1, 0, 0, 0]);
   object.quaternion.set(x, y, z, w).normalize();
 }
-function box(size, position, color, parent) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size),
-    new THREE.MeshStandardMaterial({color, roughness: 0.85}));
-  mesh.position.fromArray(position);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  parent.add(mesh);
-  return mesh;
-}
-
 async function initializeView() {
   const container = $('canvas');
   let viewDirty = true;
   const invalidate = () => { viewDirty = true; };
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#1a252c');
-  scene.fog = new THREE.Fog('#1a252c', 3, 9);
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.005, 20);
-  camera.up.set(0, 0, 1);
-  camera.position.set(0.43, -0.48, 0.33);
-  const renderer = new THREE.WebGLRenderer({antialias: false, alpha: false});
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.02, 30);
+  camera.position.set(0.55,0.35,0.7);
+  const renderer = new THREE.WebGLRenderer({antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1;
+  const arena=createPollenScene(scene,renderer),shell=createSceneShell(document);
   container.append(renderer.domElement);
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0, 0.13);
-  controls.enableDamping = true;
-  controls.addEventListener('change', () => { viewDirty = true; });
-  controls.minDistance = 0.13;
-  controls.maxDistance = 5;
-  scene.add(new THREE.HemisphereLight(0xf7fff1, 0x829574, 2.2));
-  const sun = new THREE.DirectionalLight(0xfff7df, 3);
-  sun.position.set(1, -1, 2);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, {left: -1, right: 1, top: 1, bottom: -1, near: 0.01, far: 5});
-  sun.shadow.bias = -0.0001;
-  scene.add(sun);
-  box([6, 6, 0.03], [0, 0, -0.019], '#35453e', scene);
-  const grid = new THREE.GridHelper(6, 60, 0x536554, 0x3e5145);
-  grid.rotation.x = Math.PI / 2;
-  grid.position.z = -0.002;
-  scene.add(grid);
-  // Park meshes are a visual preview until the terrain dynamics are connected.
-  box([0.7, 0.45, 0.09], [0.8, 0.65, 0.045], '#b4c1aa', scene);
-  const bank = box([0.65, 0.45, 0.045], [0.17, 0.65, 0.045], '#b9c5ae', scene);
-  bank.rotation.y = -0.14;
-  box([0.05, 0.9, 0.13], [-0.6, 0.8, 0.065], '#9dae92', scene);
-  const board = new THREE.Group();
-  board.position.set(0.28, 0.02, 0);
-  scene.add(board);
-  box([0.18, 0.075, 0.007], [0, 0, 0.029], '#667e51', board);
-  box([0.14, 0.065, 0.001], [0, 0, 0.033], '#324232', board);
-  for (const x of [-0.06, 0.06]) for (const y of [-0.044, 0.044]) {
-    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.012, 20),
-      new THREE.MeshStandardMaterial({color: '#efeee0', roughness: 0.7}));
-    wheel.position.set(x, y, 0.012);
-    wheel.castShadow = true;
-    board.add(wheel);
-  }
-  $('board-toggle').onchange = () => { board.visible = $('board-toggle').checked; invalidate(); };
-  $('frame-robot').onclick = () => {
-    controls.target.set(0, 0, 0.13);
-    camera.position.set(0.43, -0.48, 0.33);
-  };
-  $('frame-park').onclick = () => {
-    controls.target.set(0.15, 0.35, 0.04);
-    camera.position.set(1.6, -1.9, 1.5);
-  };
+  const controls=new OrbitControls(camera,renderer.domElement);
+  controls.target.set(0,0.13,0);controls.enableDamping=true;
+  controls.minDistance=.13;controls.maxDistance=5;
+  controls.addEventListener('change',()=>{viewDirty=true;});
+  $('board-toggle').onchange=()=>{arena.border($('board-toggle').checked);invalidate();};
+  const follow=createCameraFollower(camera,controls);
+  $('frame-robot').onclick=()=>follow.home();
+  $('frame-park').onclick=()=>{follow.hold();controls.target.set(0,.08,0);camera.position.set(2,1.5,2);};
   const resize = () => {
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -427,6 +383,7 @@ async function initializeView() {
   };
   renderer.setAnimationLoop(now => {
     controls.update();
+    arena.focus(robotView?.focus??controls.target);
     if (viewDirty) { renderer.render(scene, camera); viewDirty = false; }
     if (sensorToggle.checked && sensorPreview && !sensorReadPending) {
       sensorReadPending = true;
@@ -448,13 +405,14 @@ async function initializeView() {
       }).finally(() => { sensorReadPending = false; });
     }
   });
-  const sensors = await loadRobot(scene, invalidate);
+  const sensors = await loadRobot(scene, invalidate,follow);
+  shell.assetsReady();
   if (sensors.camera && sensors.tof) sensorPreview = createSensorPreview(renderer, scene, sensors.camera, sensors.tof, $('camera-frame'), $('lidar-frame'));
   globalThis.microduckSensorStats = sensorPreview?.stats;
   invalidate();
 }
 
-async function loadRobot(scene, invalidate) {
+async function loadRobot(scene, invalidate,follow) {
   const response = await fetch('./robot.xml');
   if (!response.ok) throw new Error('Robot description could not be loaded');
   const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
@@ -464,18 +422,20 @@ async function loadRobot(scene, invalidate) {
       scale: vector(mesh.getAttribute('scale'), [1, 1, 1])}]));
   const colors = new Map([...xml.querySelectorAll('asset > material')].map(material =>
     [material.getAttribute('name'), vector(material.getAttribute('rgba'), [0.6, 0.65, 0.55, 1])]));
-  const loader = new STLLoader();
-  const geometryCache = new Map();
+  const geometries=await loadPollenGeometries();
+  const materialForMesh=materialHookFor(VARIANTS[DEFAULT_VARIANT]);
+  const materialCache=new Map();
   const joints = [];
   const visualBodies = new Map();
   const sensors = {};
-  const robot = new THREE.Group();
-  scene.add(robot);
+  // The imported hierarchy and all Rumoca body poses use Z up. Pollen's scene uses Y up.
+  const modelSpace=new THREE.Group(),robot=new THREE.Group();
+  modelSpace.add(robot);scene.add(modelSpace);
   function geometry(file) {
     const name = file.split('/').pop();
-    if (!geometryCache.has(name)) geometryCache.set(name,
-      loader.loadAsync('./assets/' + encodeURIComponent(name)));
-    return geometryCache.get(name);
+    const result=geometries.get(name);
+    if(!result)throw Error('Robot GLB is missing geometry: '+name);
+    return result;
   }
   async function body(element, parent) {
     const frame = new THREE.Group();
@@ -522,13 +482,16 @@ async function loadRobot(scene, invalidate) {
       const definition = assets.get(geom.getAttribute('mesh'));
       if (!definition) throw new Error('Mesh definition is missing');
       const [r, g, b, opacity] = colors.get(geom.getAttribute('material')) ?? [0.6, 0.65, 0.55, 1];
-      const mesh = new THREE.Mesh(await geometry(definition.file), new THREE.MeshStandardMaterial({
-        color: new THREE.Color(r, g, b), roughness: 0.72,
-        metalness: 0.08, opacity, transparent: opacity < 1
+      const spec=materialForMesh(definition.file.split('/').pop(),frame.name,[r,g,b,opacity]);
+      const key=JSON.stringify(spec);
+      if(!materialCache.has(key))materialCache.set(key,new THREE.MeshStandardMaterial({
+        color:new THREE.Color(...spec.color),roughness:spec.roughness??.5,
+        metalness:spec.metalness??0,opacity,transparent:opacity<1,envMapIntensity:.45
       }));
+      const mesh=new THREE.Mesh(geometry(definition.file),materialCache.get(key));
       mesh.scale.fromArray(definition.scale);
       transform(mesh, geom);
-      mesh.castShadow = true;
+      mesh.castShadow = false;
       // The millimetre-scale CAD surfaces cast onto the ground; avoiding
       // self-shadow reception prevents shadow-map banding on the shells.
       mesh.receiveShadow = false;
@@ -543,6 +506,8 @@ async function loadRobot(scene, invalidate) {
   const bounds = new THREE.Box3().setFromObject(robot);
   if (bounds.isEmpty()) throw new Error('Robot has no visible geometry');
   robot.position.z += -bounds.min.z + 0.002;
+  modelSpace.rotation.x=-Math.PI/2;
+  modelSpace.updateMatrixWorld(true);
   joints.forEach(joint => {
     const row = document.createElement('div');
     row.className = 'joint';
@@ -573,38 +538,9 @@ async function loadRobot(scene, invalidate) {
   $('reset-pose').onclick = () => joints.forEach(joint => joint.reset());
   $('roster').textContent = world.querySelectorAll('body').length + ' imported bodies · ' +
     joints.length + ' hinges. Mouth articulation is being added to the tutorial model.';
-  $('loading').remove();
-  // Explicit viewer wire order; it does not assemble the Modelica robot.
-  const bodyNames = ["trunk_base", "yaw2roll", "hip_l", "upper_leg_left", "leg", "ankle_left", "neck", "neck_pitch", "yaw_roll_motion", "jaw_soft", "bearing_roll", "hip_l_2", "upper_leg_right", "leg_2", "ankle_right"];
-  const matrix = new THREE.Matrix4();
-  robotView = {
-    apply(state) {
-      if (!Number.isFinite(state.time) || state.bodies?.length !== bodyNames.length)
-        throw new Error('Invalid Modelica body-pose frame.');
-      // Validate the entire frame before moving any geometry.
-      state.bodies.forEach((pose, i) => {
-        if (!visualBodies.has(bodyNames[i]) || pose.position?.length !== 3 || pose.rotation?.length !== 9 ||
-            ![...pose.position, ...pose.rotation].every(Number.isFinite)) throw new Error('Incomplete Modelica body pose.');
-      });
-      state.bodies.forEach((pose, i) => {
-        const object = visualBodies.get(bodyNames[i]).visuals;
-        scene.add(object);
-        object.position.fromArray(pose.position);
-        const r = pose.rotation;
-        matrix.set(r[0],r[1],r[2],0, r[3],r[4],r[5],0, r[6],r[7],r[8],0, 0,0,0,1);
-        object.quaternion.setFromRotationMatrix(matrix);
-      });
-      document.querySelectorAll('#joints input, #reset-pose').forEach(input => input.disabled = true);
-      invalidate();
-    },
-    restore() {
-      for (const {visuals, parent} of visualBodies.values()) {
-        parent.add(visuals); visuals.position.set(0,0,0); visuals.quaternion.identity();
-      }
-      document.querySelectorAll('#joints input, #reset-pose').forEach(input => input.disabled = false);
-      invalidate();
-    }
-  };
+  $('loading').textContent='Visual assets ready.';
+  robotView=createModelicaPoseView({modelSpace,visualBodies,invalidate,onPose:position=>follow.update(position),onRestore:()=>follow.restore(),
+    lockControls:disabled=>document.querySelectorAll('#joints input, #reset-pose').forEach(input=>input.disabled=disabled)});
   $('prepare-simulation').disabled = false;
   return sensors;
 }

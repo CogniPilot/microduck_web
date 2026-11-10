@@ -1,0 +1,78 @@
+{
+  "upstream": "https://huggingface.co/spaces/pollen-robotics/microduck-simulator",
+  "commit": "efedf47f4d4ae52d17ad2e108a5b8795d41537a3",
+  "files": [
+    {
+      "path": "pollen/microduck.glb",
+      "bytes": 1279444,
+      "sha256": "ad0b8d1c886a857fd09d337be11e731f4ac72bf099b0af63081031f97ed6eadb"
+    },
+    {
+      "path": "brand/cognipilot.png",
+      "bytes": 21225,
+      "sha256": "4215e9f2f5cab3553c26bae52eca266e1044f904d3d8d64058fb6c5270c14aff"
+    },
+    {
+      "path": "brand/rumoca.svg",
+      "bytes": 13709,
+      "sha256": "13680d2336731cfe3f7cecd218179fd76e3b23bbea77f6da03bf896af89b8b89"
+    },
+    {
+      "path": "vendor/three-addons/loaders/GLTFLoader.js",
+      "url": "https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/jsm/loaders/GLTFLoader.js",
+      "bytes": 108522,
+      "sha256": "d073b438e6a07e1359741dd5d6c76c953420cc0d4fd84eb1bdde94315540e6a3"
+    },
+    {
+      "path": "vendor/three-addons/utils/BufferGeometryUtils.js",
+      "url": "https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/jsm/utils/BufferGeometryUtils.js",
+      "bytes": 31906,
+      "sha256": "9be041e96308775d00e2695cc607645b9a9b64fd7c0e759dd8f7c00a8d92becb"
+    },
+    {
+      "path": "vendor/three-addons/environments/RoomEnvironment.js",
+      "url": "https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/jsm/environments/RoomEnvironment.js",
+      "bytes": 3735,
+      "sha256": "e21f41b7ef2016f2984a5d27850b42dffa797a6a194a138e288b06576d765a7b"
+    }
+  ],
+  "cognipilotLogo": {
+    "repo": "CogniPilot/cognipilot_docs",
+    "tree": "7b4ebbec19d8b6ca69ef5670c4b71542e47da5cc",
+    "path": "docs/assets/CogniPilotLogoSite.png",
+    "gitBlob": "f0115055b15547c761f83140ae15ecdbd7e190c2",
+    "sha256": "4215e9f2f5cab3553c26bae52eca266e1044f904d3d8d64058fb6c5270c14aff"
+  },
+  "rumocaLogo": {
+    "repo": "CogniPilot/rumoca",
+    "path": "assets/brand/rumoca.svg",
+    "commit": "26d801c0ede12f2b7f6090b2912863f073c46612"
+  },
+  "scope": "Scene and light GLB geometry; numerical Modelica model, solver, policy and worker unchanged. Flat ground only; grid walls are visual, not contact geometry.",
+  "codeLicense": {
+    "spdx": "Apache-2.0",
+    "notice": "LICENSE"
+  },
+  "meshLicense": {
+    "spdx": "CC-BY-NC-SA-4.0",
+    "notice": "MESH-LICENSE.txt",
+    "basis": "Inherited Pollen robot-mesh adaptation terms, not an explicit separate GLB license grant from the Space",
+    "source": "https://github.com/pollen-robotics/microduck_rl/blob/develop/LICENSE-MODELS.md",
+    "upstreamModelsNoticeGitBlob": "b7eb7fc4c20a686984d7d19b0b2f1f9750252e76",
+    "glbAddedCommit": "89f539959e92485020359da82ceaf61871b0915f",
+    "metadataGenerator": "stl_to_glb.py",
+    "localModifications": "GLB bytes unchanged. Creased normals rebuilt at load time."
+  },
+  "codePinning": "Adapted port code is versioned in the repository; immutable asset/dependency payloads are listed here.",
+  "upstreamCode": [
+    {
+      "path": "app/src/game/arena.js",
+      "sha256": "c87e60c8c7ee5448bc9c4df9f7984545201f0cad1ded1ef0eb4acb2a9896a537"
+    },
+    {
+      "path": "app/src/game/variants.js",
+      "sha256": "b4d54c53b515912418a152e9efc8bb16d2fcb25f3ba0e4fac2b63b41b0dee335"
+    }
+  ],
+  "flatGround": "The issued floor has one segment per side (two triangles); original default256 segments retained for relief consumers. Current Modelica scene disables displacement."
+}

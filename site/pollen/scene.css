@@ -1,0 +1,70 @@
+/* Adapted from Pollen Robotics comic.jsx, TitleMenu.jsx and Overlays.jsx,
+   efedf47f, Apache-2.0. Modified for the Modelica simulator and its panels. */
+@font-face{font-family:Anton;src:url('./Anton-Regular.ttf') format('truetype');font-display:swap}
+:root{--ink:#08080c;--cream:#faf8f2;--orange:#ff7a2f;--cyan:#2ff0e6;--magenta:#ff2fa8}
+body{background:var(--ink);color:var(--cream);overflow:hidden}
+header{position:fixed;inset:0 0 auto;height:68px;z-index:12;padding:10px 24px;gap:20px;background:linear-gradient(#08080cf0,#08080c90);border:0}
+header .brand,header .compiler-brand{display:flex;align-items:center;gap:8px;font:600 12px/1.2 system-ui;letter-spacing:.04em;color:var(--cream);text-decoration:none}
+header .brand img{width:112px;height:35px;object-fit:contain}
+header .brand span{display:none}
+.compiler-brand img{width:35px;height:35px;object-fit:contain}
+header .brand img,.intro-logos a:first-child img{background:var(--cream);padding:3px;border-radius:2px}
+.modelica-brand{font:600 12px ui-monospace,monospace;letter-spacing:.08em;color:var(--orange)}
+header nav{gap:8px;margin-left:auto}
+button{border-radius:0;background:#14141c;border:2px solid #32323f;color:var(--cream);font-size:12px;letter-spacing:.03em}
+button:hover:not(:disabled){background:#292932}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline-color:var(--cyan)}
+main{max-width:none;padding:0}
+.lab{display:block;min-height:0}
+.tasks,.learning{display:none!important}
+.viewport{position:static;display:block;border:0;border-radius:0;min-height:0;background:transparent;overflow:visible}
+#canvas{position:fixed;inset:0;min-height:0;z-index:1}
+.view-toolbar{position:fixed;top:78px;left:24px;right:24px;z-index:10;padding:0;color:#ffffff80;font:10px ui-monospace,monospace}
+.view-toolbar button{background:#08080cb8;color:var(--cream)}
+.view-bottom{position:fixed;bottom:213px;left:24px;z-index:10;padding:0;color:#ffffff60;gap:20px;font:10px ui-monospace,monospace}
+.simulation-controls{position:fixed;bottom:142px;left:24px;right:24px;z-index:10;padding:10px 12px;background:#08080cd9;border:1px solid #ffffff1c;gap:8px}
+.simulation-controls button{font-size:11px}
+#play-policy,#play-standing,#play-fall{display:none}
+#walk-mode{background:var(--orange);color:var(--ink);border-color:#101018;box-shadow:3px 3px var(--magenta);font-weight:800}
+.simulation-controls span{font:10px/1.5 ui-monospace,monospace;color:#ffffffb0}
+.walking-help{position:fixed;bottom:112px;left:24px;right:24px;z-index:10;background:none;padding:0;color:#ffffff90;font:10px ui-monospace,monospace}
+.touch-drive{position:fixed;bottom:35px;left:24px;width:min(460px,calc(100vw - 48px));z-index:10;background:none;padding:0;gap:6px}
+.touch-drive button{min-height:43px;background:#14141ccc;font:11px ui-monospace,monospace;border-color:#ffffff30}
+.touch-drive small{font:9px ui-monospace,monospace;color:#ffffff70}
+.intro{position:fixed;inset:0;z-index:11;display:flex;align-items:center;padding:100px 7vw 80px;background:linear-gradient(90deg,#08080cf8 0%,#08080cdb 38%,#08080c00 78%);margin:0;pointer-events:none}
+.intro-card{width:min(570px,90vw);pointer-events:auto}
+.intro .eyebrow{font:10px/1.6 ui-monospace,monospace;letter-spacing:.14em;color:var(--orange);max-width:350px}
+.intro h1{font:400 clamp(70px,12vw,165px)/.87 Anton,'Arial Narrow',Impact,sans-serif;letter-spacing:.01em;margin:30px 0 25px}
+.intro h1 span{display:block;transform:rotate(-1.5deg);color:var(--orange);text-shadow:.06em .06em #101018,-.035em 0 var(--cyan),.035em 0 var(--magenta)}
+.intro h1 span+span{color:transparent;-webkit-text-stroke:.032em white;text-shadow:-.03em 0 var(--magenta);transform:rotate(.75deg)}
+.intro .intro-copy{font:13px/1.7 ui-monospace,monospace;color:#ffffffa0;margin:0 0 20px}
+.intro .physics-headline{font:400 clamp(22px,2.5vw,34px)/1.3 Anton,Impact,sans-serif;letter-spacing:.035em;color:var(--cream);margin:0 0 16px}
+.intro .physics-headline a{color:inherit;text-decoration:none}
+.intro .physics-headline a:hover{text-decoration:underline;text-decoration-color:var(--orange)}
+.intro-logos{display:flex;align-items:center;gap:24px;margin:20px 0 28px}
+.intro-logos img{max-width:120px;max-height:38px;object-fit:contain}
+.intro-logos strong{font:13px ui-monospace,monospace;color:var(--cream)}
+#enter-scene{padding:14px 30px;background:var(--orange);color:#101018;border:4px solid #101018;box-shadow:7px 7px var(--magenta);font:400 22px/1.1 Anton,Impact,sans-serif;text-transform:uppercase;letter-spacing:.07em;transition:transform .12s,box-shadow .12s}
+#enter-scene:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:10px 10px var(--magenta)}
+#enter-scene:active:not(:disabled){transform:translate(7px,7px);box-shadow:none}
+#loading{position:static;display:block;text-align:left;padding:16px 0 0;font:11px/1.6 ui-monospace,monospace;color:#ffffff90}
+.intro .intro-credit{font:10px/1.6 ui-monospace,monospace;color:#ffffff60;margin-top:24px}
+.intro a{color:#ffffffa0}
+body.entered .intro{display:none}
+body:not(.entered) .view-toolbar,body:not(.entered) .view-bottom,body:not(.entered) .walking-help,body:not(.entered) .touch-drive{visibility:hidden}
+body:not(.entered) .simulation-controls{z-index:12;left:auto;right:24px;max-width:350px;bottom:40px}
+body:not(.entered) .simulation-controls button{display:none}
+.source-panel,.sensor-panel,.pose{display:none;position:fixed;z-index:20;top:80px;right:24px;left:24px;max-height:calc(100dvh - 130px);overflow:auto;padding:24px;margin:0;background:#101018f5;border:1px solid #ffffff30;border-radius:0}
+body[data-panel=modelica] .source-panel,body[data-panel=sensors] .sensor-panel,body[data-panel=pose] .pose{display:block}
+body[data-panel=pose] .pose{left:auto;width:min(350px,calc(100vw - 48px))}
+.source-panel .muted,.sensor-panel .muted,.pose .muted{color:#ffffff80}
+.source-panel .eyebrow,.sensor-panel .eyebrow,.pose .eyebrow{color:var(--orange)}
+footer{position:fixed;inset:auto 14px 8px;z-index:12;padding:2px 4px;gap:12px;font:10px/1.6 ui-monospace,monospace;color:#d4d4df;background:#08080ce6}
+footer a{color:#d4d4df}
+.halftone{position:fixed;inset:0;z-index:2;pointer-events:none;background-image:radial-gradient(#ffffff0d 1px,transparent 1.5px);background-size:21px 21px;mask-image:linear-gradient(to bottom,transparent 30%,black 100%)}
+.crt{position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(115% 90% at 50% 50%,transparent 62%,#0000006b 100%)}
+.crt::after{content:'';position:absolute;inset:0;opacity:.13;background:repeating-linear-gradient(to bottom,#0000008c 0,#0000008c 1px,transparent 1px,transparent 3px),repeating-linear-gradient(to right,#ff463c0d 0,#ff463c0d 1px,#46ff5a09 1px,#46ff5a09 2px,#466eff0d 2px,#466eff0d 3px)}
+@media(max-width:700px){header{height:68px;padding:10px 14px;gap:10px;flex-wrap:nowrap}.modelica-brand{display:none}header .brand img{width:78px}.compiler-brand span{display:none}header nav{gap:4px}header nav button{padding:5px;font-size:10px}.view-toolbar{left:14px;right:14px;font-size:8px}.intro{padding:100px 24px 180px;background:linear-gradient(90deg,#08080cf5,#08080c50)}.intro .eyebrow{font-size:8px}.intro h1{font-size:clamp(70px,20vw,115px);margin:20px 0}.intro .intro-copy{font-size:11px}.intro-logos{gap:18px;margin:18px 0}.intro-logos img{max-width:90px;max-height:28px}.intro-logos strong{font-size:11px}#enter-scene{font-size:19px;padding:12px 22px}.simulation-controls{left:14px;right:14px;bottom:143px;gap:5px;padding:8px}.simulation-controls button{font-size:10px;padding:5px}.walking-help{left:14px;right:14px;bottom:107px;font-size:8px}.touch-drive{left:14px;bottom:35px;width:calc(100vw - 28px);grid-template-columns:repeat(5,minmax(0,1fr))}.touch-drive button{min-height:42px;font-size:9px}.touch-drive button[data-drive=zero]{grid-column:auto}.view-bottom{bottom:218px;left:14px;right:14px;font-size:8px}.source-panel,.sensor-panel,.pose{left:14px;right:14px;padding:16px}.intro .intro-credit{font-size:8px}body:not(.entered) .simulation-controls{left:24px;right:24px;max-width:none;bottom:30px}footer{font-size:7px;gap:7px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+@media(max-width:700px){.intro{background:linear-gradient(90deg,#08080cf5,#08080cb0)}.touch-drive{bottom:65px}.touch-drive small{display:none}.walking-help{bottom:122px}.simulation-controls{bottom:156px}.view-bottom{bottom:231px}footer{font-size:9px}.sensor-panel .panel-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.6fr);align-items:start;gap:8px}.sensor-panel #sensor-status{grid-column:1/-1}.sensor-panel h2{font-size:20px}}
+@media(max-width:700px){body:not(.entered) .simulation-controls{bottom:80px}}

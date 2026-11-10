@@ -1,0 +1,18 @@
+Scene code and graphics adapted from Pollen Robotics' Microduck Simulator:
+https://huggingface.co/spaces/pollen-robotics/microduck-simulator
+Source revision: efedf47f4d4ae52d17ad2e108a5b8795d41537a3
+
+The original application code is distributed under Apache License 2.0,
+retained in LICENSE. This port modifies the arena integration, geometry
+loader and title/loading interface to display Modelica physics compiled
+by Rumoca. It is a CogniPilot application.
+
+Robot geometry is derived from Pollen's Microduck robot assets. The
+existing robot mesh attribution and CC BY-NC-SA 4.0 terms remain at
+../third_party/microduck_rl/LICENSE-MODELS.md. The GLB is an alternate
+visual representation, not a replacement physics or collision model.
+
+Three.js add-on sources are from r160 and retain the Three.js MIT license
+at ../vendor/THREE-LICENSE. Anton is distributed under its retained
+SIL Open Font License (Anton-OFL.txt). CogniPilot and Rumoca logos come
+from their respective project repositories; provenance is in SOURCE.json.
