@@ -1,6 +1,6 @@
 // Velocity/yaw commands for the pretrained controller; no visual motion is generated here.
-export function createWalkingControls({button,status,canRun,step,setRunning,onError}){
- let active=false;
+export function createWalkingControls({button,status,canRun,start,pause,update,setRunning,onError,ensureReady=async()=>{}}){
+ let active=false,actionGeneration=0;
  const held=new Set(),touchHeld=new Map(),keys=new Set(['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space']);
  const editing=target=>target?.isContentEditable||!!target?.closest?.('textarea,input,select,.cm-editor,.monaco-editor');
  function has(key){return held.has(key)||[...touchHeld.values()].includes(key);}
@@ -9,7 +9,7 @@ export function createWalkingControls({button,status,canRun,step,setRunning,onEr
   0,
   0.5*(Number(has('KeyA')||has('ArrowLeft'))-Number(has('KeyD')||has('ArrowRight')))
  ];}
- function report(){const [v,,yaw]=command();status.textContent='Target: '+v.toFixed(2)+' m/s · turn '+yaw.toFixed(2)+' rad/s';}
+ function report(){const twist=command(),[v,,yaw]=twist;status.textContent='Target: '+v.toFixed(2)+' m/s · turn '+yaw.toFixed(2)+' rad/s';if(active)update(twist);}
  function clear(){held.clear();touchHeld.clear();report();}
  for(const control of document.querySelectorAll('[data-drive]')){
   control.addEventListener('pointerdown',event=>{
@@ -29,19 +29,21 @@ export function createWalkingControls({button,status,canRun,step,setRunning,onEr
  window.addEventListener('blur',clear);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});
  document.addEventListener('focusin',event=>{if(editing(event.target))clear();});
- function stop(){active=false;clear();button.textContent='Run pretrained';setRunning(false);}
+ function finish(reason){actionGeneration++;active=false;clear();button.disabled=false;button.textContent='Run pretrained';setRunning(false);if(reason==='fallen')status.textContent='Robot fell. Stop and prepare again to reset.';}
+ async function stop(){if(!active)return;const action=actionGeneration;active=false;button.disabled=true;clear();try{await pause();}finally{if(action===actionGeneration)finish();}}
  button.onclick=async()=>{
-  if(active){stop();return;}
-  if(!canRun())return;
-  active=true;clear();button.textContent='Pause walking';setRunning(true);
+  const action=++actionGeneration;
+  button.disabled=true;
   try{
-   while(active&&canRun()){
-    const state=await step(command());
-    if(state.outputs.fallen){stop();status.textContent='Robot fell. Stop and prepare again to reset.';break;}
-   }
-  }catch(error){stop();onError(error);}
-  if(active)stop();
+   if(active){await stop();return;}
+   await ensureReady();
+   if(action!==actionGeneration)return;
+   if(!canRun())return;
+   active=true;clear();button.textContent='Pause walking';setRunning(true);
+   await start(command());
+  }catch(error){if(action===actionGeneration){finish();onError(error);}}
+  finally{if(action===actionGeneration)button.disabled=false;}
  };
  report();
- return {stop,isRunning:()=>active,command};
+ return {stop,finish,isRunning:()=>active,command};
 }

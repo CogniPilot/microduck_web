@@ -4,6 +4,7 @@ import {createModelSession,readCompressedArtifact} from './prebuilt-session.js';
 import * as ort from './vendor/onnxruntime-1.31.1/ort.js';
 import {poseFrame} from './policy-contract.js';
 import {checkControllerInputs} from './model-inputs.js';
+import {createWalkRunner} from './walk-runner.js';
 ort.env.wasm.numThreads=1;
 ort.env.wasm.wasmPaths={mjs:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.js',import.meta.url).href,wasm:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.wasm',import.meta.url).href};
 let session, controller, initialized, policy, lastValues;
@@ -77,4 +78,25 @@ async function execute(message){
  const frame=snapshot();timing.snapshot_ms=mark()-phase;if(control){frame.control=control;frame.timing_ms=timing;}return frame;
 }
 let queue=Promise.resolve();
-self.onmessage=({data})=>{queue=queue.then(async()=>{try{self.postMessage({id:data.id,result:await execute(data)});}catch(error){self.postMessage({id:data.id,error:String(error)});}});};
+const tasks=[],taskChannel=new MessageChannel();
+taskChannel.port1.onmessage=()=>tasks.shift()?.();
+const enqueue=task=>{const result=queue.then(task);queue=result.catch(()=>{});return result;};
+const walking=createWalkRunner({
+ step:command=>enqueue(()=>execute(command)),time:()=>session?.time()??NaN,
+ send:message=>self.postMessage(message),
+ schedule:(task,delay)=>{const dispatch=()=>{tasks.push(task);taskChannel.port2.postMessage(null);};if(delay>0)setTimeout(dispatch,delay);else dispatch();}
+});
+self.onmessage=({data})=>{
+ const reply=result=>self.postMessage({id:data.id,result});
+ const refuse=error=>self.postMessage({id:data.id,error:String(error)});
+ if(data.type==='walk_input'){
+  try{walking.update(data);}catch(error){walking.stop(data).catch(()=>{});self.postMessage({type:'walk_error',generation:data.generation,error:String(error)});}return;
+ }
+ if(data.type==='walk_ack'){walking.acknowledge(data);return;}
+ if(data.type==='walk_stop'){walking.stop(data).then(reply,refuse);return;}
+ enqueue(async()=>{
+  if(data.type==='walk_start')return walking.start(data);
+  if(walking.isRunning())throw Error('Pause walking before issuing another simulation command.');
+  return execute(data);
+ }).then(reply,refuse);
+};

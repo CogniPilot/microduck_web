@@ -14,17 +14,21 @@ let physicsTime = 0;
 let renderedFrame;
 let physicsRequest = 0;
 let physicsPending;
+let physicsGeneration=0;
 let replayGeneration = 0;
+let walkGeneration=0,walkRun,walkTimer,walkStopping=false;
 const walking=createWalkingControls({
   button:$('walk-mode'),status:$('walk-command'),
-  canRun:()=>!!physicsWorker&&physicsReady,
-  step:twist=>showPhysics({type:'policy_step',time:physicsTime+0.02,twist}),
-  setRunning:active=>$('step-simulation').disabled=active||!physicsReady,
+  canRun:()=>!!physicsWorker&&physicsReady&&!walkStopping,
+  start:startWalking,pause:pauseWalking,update:updateWalking,
+  setRunning:active=>$('step-simulation').disabled=active||walkStopping||!physicsReady,
   onError:error=>stopPhysics('Walking stopped: '+error.message)
 });
 function stopPhysics(message = 'Simulation stopped. Pose controls restored.') {
   replayGeneration++;
-  physicsReady=false; walking.stop(); $('walk-mode').disabled=true;
+  physicsGeneration++;
+  walkGeneration++;walkRun=undefined;walkStopping=false;clearTimeout(walkTimer);
+  physicsReady=false; walking.finish(); $('walk-mode').disabled=true;
   physicsWorker?.terminate(); physicsWorker = undefined;
   if (physicsPending) { clearTimeout(physicsPending.timer); physicsPending.reject(new Error(message)); physicsPending = undefined; }
   robotView?.restore();
@@ -45,40 +49,85 @@ function physicsCommand(message, limit = 360000) {
   });
 }
 async function showPhysics(command) {
+  const worker=physicsWorker,generation=physicsGeneration;
   if ((command.type === 'step'||command.type === 'policy_step') && renderedFrame) command.inputs = sensorInputs(renderedFrame, physicsTime);
   const state = await physicsCommand(command);
+  if(physicsWorker!==worker||physicsGeneration!==generation)return;
+  applyPhysics(state);
+  return state;
+}
+function applyPhysics(state) {
   robotView.apply(state);
   physicsTime = state.time;
   showSensors(state);
   $('view-mode').textContent = 'Modelica simulation · t = ' + state.time.toFixed(3) + ' s';
   $('simulation-status').textContent = state.preparation ? (state.preparation.plant==='prebuilt'&&state.preparation.controller==='prebuilt'?'Simulation ready · compiled models loaded.':'Simulation ready · edited source compiled.') : state.control ? 'Pretrained Pollen velstand · Modelica physics.' : 'Standing controller · Modelica physics.';
-  return state;
 }
-$('prepare-simulation').onclick = async () => {
+function watchWalking(){clearTimeout(walkTimer);walkTimer=setTimeout(()=>stopPhysics('Simulation exceeded its time budget. No new pose was applied.'),360000);}
+function walkingInputs(){return renderedFrame?sensorInputs(renderedFrame,physicsTime):null;}
+function updateWalking(twist=walking.command()){
+  if(!walkRun||walkStopping)return;
+  try{physicsWorker.postMessage({type:'walk_input',generation:walkRun.generation,sequence:++walkRun.inputSequence,twist,inputs:walkingInputs()});}
+  catch(error){stopPhysics('Walking stopped: '+error.message);}
+}
+async function startWalking(twist){
+  if(walkRun||walkStopping)throw Error('Walking is already running.');
+  const run={generation:++walkGeneration,inputSequence:0,displaySequence:0};walkRun=run;watchWalking();
+  try{await physicsCommand({type:'walk_start',generation:run.generation,mode:'realtime',twist,inputs:walkingInputs()});}
+  catch(error){if(walkGeneration!==run.generation)return;if(walkRun===run)walkRun=undefined;clearTimeout(walkTimer);throw error;}
+}
+async function pauseWalking(){
+  const run=walkRun;if(!run)return;
+  walkStopping=true;$('step-simulation').disabled=true;
+  try{const state=await physicsCommand({type:'walk_stop',generation:run.generation});if(state.frame&&state.frame.time>physicsTime)applyPhysics(state.frame);}
+  finally{if(walkGeneration===run.generation){if(walkRun===run)walkRun=undefined;walkStopping=false;clearTimeout(walkTimer);$('step-simulation').disabled=!physicsReady;}}
+}
+function walkingMessage(data){
+  if(!['walk_frame','walk_done','walk_error'].includes(data.type))return false;
+  if(data.generation!==walkRun?.generation)return true;
+  if(data.type==='walk_error'){stopPhysics('Walking stopped: '+data.error);return true;}
+  if(data.type==='walk_done'){
+    if(data.frame&&data.frame.time>physicsTime)applyPhysics(data.frame);
+    walkRun=undefined;clearTimeout(walkTimer);if(!walkStopping)walking.finish(data.reason);return true;
+  }
+  if(!Number.isSafeInteger(data.sequence)||data.sequence<=walkRun.displaySequence)return true;
+  walkRun.displaySequence=data.sequence;applyPhysics(data.result);watchWalking();
+  physicsWorker.postMessage({type:'walk_ack',generation:data.generation,sequence:data.sequence});return true;
+}
+async function prepareSimulation() {
   if (!robotView) return;
+  if(physicsWorker||physicsPending)stopPhysics();
+  const generation=++physicsGeneration;let worker;
   $('prepare-simulation').disabled = true;
   $('stop-simulation').disabled = false;
   $('simulation-status').textContent = 'Preparing simulation · default models are precompiled…';
   try {
     await globalThis.microduckSourcesReady;
-    physicsWorker = new Worker(new URL('./physics.worker.js', import.meta.url), {type: 'module'});
-    physicsWorker.onmessage = ({data}) => {
+    if(physicsGeneration!==generation)return;
+    worker=new Worker(new URL('./physics.worker.js', import.meta.url), {type: 'module'});physicsWorker=worker;
+    worker.onmessage = ({data}) => {
+      if(physicsWorker!==worker)return;
+      try{if(walkingMessage(data))return;}catch(error){stopPhysics('Simulation stopped: '+error.message);return;}
       if (!physicsPending || physicsPending.id !== data.id) return;
       const pending = physicsPending; physicsPending = undefined; clearTimeout(pending.timer);
       data.error ? pending.reject(new Error(data.error)) : pending.resolve(data.result);
     };
-    physicsWorker.onerror = event => stopPhysics('Simulation worker failed: ' + event.message);
+    worker.onerror = event => {if(physicsWorker===worker)stopPhysics('Simulation worker failed: ' + event.message);};
     const sources = Object.fromEntries(sourceFiles.map(name =>
       [name, name === selectedFile ? $('editor').value : savedDraft(name) ?? originals.get(name)]));
-    await showPhysics({type: 'prepare', sources, model: 'Microduck'});
+    const state=await physicsCommand({type: 'prepare', sources, model: 'Microduck'});
+    if(physicsGeneration!==generation||physicsWorker!==worker)return;
+    applyPhysics(state);
     physicsReady=true; $('walk-mode').disabled=false;
     $('step-simulation').disabled = false;
-  } catch (error) { stopPhysics('Simulation unavailable: ' + error.message); }
-};
+  } catch (error) { if(physicsGeneration!==generation||(worker&&physicsWorker!==worker))return;stopPhysics('Simulation unavailable: ' + error.message);throw error; }
+}
+$('prepare-simulation').onclick=()=>prepareSimulation().catch(()=>{});
 $('step-simulation').onclick = async () => {
+  const generation=physicsGeneration;
   $('step-simulation').disabled = true;
-  try { await showPhysics({type: 'step', time: physicsTime + 0.02}); $('step-simulation').disabled = false; }
-  catch (error) { stopPhysics('Simulation stopped: ' + error.message); }
+  try { await showPhysics({type: 'step', time: physicsTime + 0.02}); if(physicsGeneration===generation)$('step-simulation').disabled = false; }
+  catch (error) { if(physicsGeneration===generation)stopPhysics('Simulation stopped: ' + error.message); }
 };
 $('stop-simulation').onclick = () => stopPhysics();
 
@@ -373,6 +422,7 @@ async function initializeView() {
   const sensorToggle = $('sensor-rendering');
   sensorToggle.onchange = () => {
     sensorGeneration++; renderedFrame = undefined;
+    updateWalking();
     $('sensor-status').textContent = sensorToggle.checked ? 'Starting camera / ToF…' : 'Rendering off · enable to view camera / ToF.';
   };
   renderer.setAnimationLoop(now => {
@@ -384,6 +434,7 @@ async function initializeView() {
       preview.capture(now).then(frame => {
         if (frame && sensorToggle.checked && generation === sensorGeneration) {
           renderedFrame = frame;
+          updateWalking();
           if (now - lastSensorStatus >= 250) {
             lastSensorStatus = now;
             $('sensor-status').textContent = 'Three.js · RGB ' + preview.stats.cameraFps.toFixed(1) + '/30 fps · ToF ' + preview.stats.tofHz.toFixed(1) + '/15 Hz · 0–4 m';
