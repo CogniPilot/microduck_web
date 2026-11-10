@@ -1,0 +1,12 @@
+{
+  "resulting_commit": "6fd7927819f3b83290e0496d2814ba6eff5b4699",
+  "source_tree": "348b3e071d5a4c66e12533014ad1bdb1e94e5abe",
+  "embedded_identity": "6fd7927819f3",
+  "scope": "Clean release/full-web, thin LTO; wasm-bindgen web0.2.126; no wasm-opt. Typed Values binding only on live858 source. License inventory unchanged: same Cargo.lock and feature graph.",
+  "files": {
+    "rumoca_bind_wasm.js": "3ac1d2ccf7c005c94750b6851a28ab70a187e396471ede0cf805020f07ad1435",
+    "rumoca_bind_wasm.d.ts": "87c76df3efabd318c06cd19ee156d89527759003de133aa8d09f4bcc55e06b19",
+    "rumoca_bind_wasm_bg.wasm": "2d69a72036566bf1ea960a835810c6c9108d4c0ed5e3989d090e7ac84a358589",
+    "rumoca_bind_wasm_bg.wasm.d.ts": "fa08e9929cbfc29b23bd03e94a0f3659638e4213974bb6b4a04de6b8d35b56d3"
+  }
+}
