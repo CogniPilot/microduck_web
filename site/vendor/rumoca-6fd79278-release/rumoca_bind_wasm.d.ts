@@ -84,6 +84,14 @@ export class WasmSimulationSession {
      */
     preparation_reused(): boolean;
     /**
+     * Read named values in request order as a JavaScript `Float64Array`.
+     *
+     * `names_json` is a JSON array of variable/input names. Duplicates are
+     * preserved. An unknown name rejects the entire read; no value is filled
+     * in. This uses one ordinary session observation and does not advance time.
+     */
+    read_values(names_json: string): Float64Array;
+    /**
      * Reset the simulation to initial conditions.
      */
     reset(): void;
@@ -502,7 +510,9 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_wasmsimulationsession_free: (a: number, b: number) => void;
-    readonly prepare_native_assignments: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly prepare_native_program: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly prepare_native_program_carrying: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly read_native_integer_lane: (a: number, b: number, c: number) => [number, number, number];
     readonly wasmsimulationsession_advance_to: (a: number, b: number) => [number, number];
     readonly wasmsimulationsession_execution_receipt_json: (a: number) => [number, number, number, number];
     readonly wasmsimulationsession_fromPrebuiltArtifact: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number];
@@ -510,6 +520,7 @@ export interface InitOutput {
     readonly wasmsimulationsession_input_names: (a: number) => [number, number, number, number];
     readonly wasmsimulationsession_new: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly wasmsimulationsession_preparation_reused: (a: number) => number;
+    readonly wasmsimulationsession_read_values: (a: number, b: number, c: number) => [number, number, number, number];
     readonly wasmsimulationsession_reset: (a: number) => [number, number];
     readonly wasmsimulationsession_reset_at: (a: number, b: number) => [number, number];
     readonly wasmsimulationsession_set_input: (a: number, b: number, c: number, d: number) => [number, number];
@@ -523,6 +534,9 @@ export interface InitOutput {
     readonly wasmsimulationsession_clearPreparationCache: () => void;
     readonly prepare_gpu_simulation: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly update_gpu_parameters: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly export_prebuilt_artifact: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly prebuilt_artifact_key: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly workspace_effective_source_roots: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly check: (a: number, b: number) => [number, number, number];
     readonly compile: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly get_build_time_utc: () => [number, number];
@@ -580,6 +594,7 @@ export interface InitOutput {
     readonly merge_parsed_source_roots: (a: number, b: number) => [number, number, number];
     readonly merge_parsed_source_roots_binary: (a: number, b: number) => [number, number, number];
     readonly parse_source_root_file: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly prepare_native_assignments: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly prime_source_root_completion_cache: () => [number, number, number];
     readonly render_target: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number];
     readonly render_target_for_source: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number];
@@ -590,12 +605,6 @@ export interface InitOutput {
     readonly wasmcompiledmodel_render_target: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly wasmcompiledmodel_representation_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly wasmcompiledmodel_solve_error: (a: number) => [number, number];
-    readonly export_prebuilt_artifact: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
-    readonly prebuilt_artifact_key: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
-    readonly prepare_native_program: (a: number, b: number, c: number, d: number) => [number, number, number, number];
-    readonly prepare_native_program_carrying: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
-    readonly read_native_integer_lane: (a: number, b: number, c: number) => [number, number, number];
-    readonly workspace_effective_source_roots: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly sin: (a: number) => number;
     readonly cos: (a: number) => number;
     readonly exp: (a: number) => number;

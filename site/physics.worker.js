@@ -5,18 +5,20 @@ import * as ort from './vendor/onnxruntime-1.31.1/ort.js';
 import {poseFrame} from './policy-contract.js';
 import {checkControllerInputs} from './model-inputs.js';
 import {createWalkRunner} from './walk-runner.js';
+import {createReadout,plantReadoutName,telemetryPattern,observationNames,commandNames} from './session-readout.js';
 ort.env.wasm.numThreads=1;
 ort.env.wasm.wasmPaths={mjs:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.js',import.meta.url).href,wasm:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-threaded.wasm',import.meta.url).href};
 let session, controller, initialized, policy, lastValues;
+let plantReadout,observationReadout,commandReadout;
 let previous=new Float32Array(14),previousCommand=new Float64Array(3),previousPosition;
 const configuration={dt:0.002,solver:'rk-like',atol:1e-8,rtol:1e-6,
  initial_inputs:[],execution_policy:'auto',parameters:{}};
 function routed(values,output,input,count){
  return Array.from({length:count},(_,i)=>[input+'['+(i+1)+']',values[output+'['+(i+1)+']']]);
 }
-function snapshot(){
- const state=JSON.parse(session.state_json());lastValues=state.values;
- const frame=poseFrame(state.values,state.time,/^(cameraTimestamp$|lidarRange\[|lidarValid\[|lidarTimestamp$|imageCentroid\[|imageTargetVisible$|nearestObstacle$|trunkGyro\[|trunkAcceleration\[|headGyro\[|headAcceleration\[|jointPosition\[|jointVelocity\[|commandedPosition\[|motorTorque\[|estimatedCurrent\[|estimatedTemperature\[|stateOfCharge$|score$|fallen$)/);
+function snapshot(initial){
+ lastValues=initial?initial.values:plantReadout();
+ const frame=poseFrame(lastValues,initial?initial.time:session.time(),telemetryPattern);
  return frame;
 }
 async function execute(message){
@@ -25,7 +27,7 @@ async function execute(message){
   const standard=await(await fetch('./msl-sources.json')).json();
   const sources={...standard,...message.sources},model=message.model??'Microduck',source=sources[model+'.mo'];
   if(!source)throw Error('Missing model source: '+model);
-  session?.free();controller?.free();session=undefined;controller=undefined;lastValues=undefined;previous=new Float32Array(14);previousCommand=new Float64Array(3);previousPosition=undefined;
+  session?.free();controller?.free();session=undefined;controller=undefined;lastValues=undefined;plantReadout=undefined;observationReadout=undefined;commandReadout=undefined;previous=new Float32Array(14);previousCommand=new Float64Array(3);previousPosition=undefined;
   const started=performance.now(),response=await fetch('./prebuilt/manifest.json');
   if(!response.ok)throw Error('Precompiled model manifest is unavailable.');
   const manifest=await response.json();
@@ -33,7 +35,7 @@ async function execute(message){
   const controlStart=performance.now(),control=await make('MicroduckPolicyInterface');controller=control.session;
   const plantStart=performance.now(),plant=await make(model);session=plant.session;
   const preparation={controller:control.mode,plant:plant.mode,controller_ms:plantStart-controlStart,plant_ms:performance.now()-plantStart,total_ms:performance.now()-started};
-  try{checkControllerInputs(JSON.parse(controller.input_names()));const frame=snapshot();frame.preparation=preparation;frame.execution=JSON.parse(session.execution_receipt_json());return frame;}catch(error){session.free();controller.free();session=undefined;controller=undefined;throw error;}
+  try{checkControllerInputs(JSON.parse(controller.input_names()));const initial=JSON.parse(session.state_json());plantReadout=createReadout(session,Object.keys(initial.values).filter(plantReadoutName));observationReadout=createReadout(controller,observationNames);commandReadout=createReadout(controller,commandNames);const frame=snapshot(initial);frame.preparation=preparation;frame.execution=JSON.parse(session.execution_receipt_json());return frame;}catch(error){session.free();controller.free();session=undefined;controller=undefined;plantReadout=undefined;observationReadout=undefined;commandReadout=undefined;throw error;}
  }
  if(!session)throw Error('Prepare the Modelica simulation first.');
  let control;
@@ -56,7 +58,7 @@ async function execute(message){
    ...routed(lastValues,'policyJointHome','policyHome',14),
    ...routed(lastValues,'policyJointHalfRange','policyHalfRange',14)
   ]));
-  const values=JSON.parse(controller.state_json()).values;
+  const values=observationReadout();
   const obs=Float32Array.from({length:61},(_,i)=>values['policyObservation['+(i+1)+']']);
   if(!Array.from(obs).every(Number.isFinite))throw Error('Modelica policy observations are unavailable.');
   timing.observation_ms=mark()-phase;phase=mark();
@@ -64,7 +66,7 @@ async function execute(message){
   if(raw.length!==14||!Array.from(raw).every(Number.isFinite))throw Error('Invalid pretrained policy output.');
   timing.policy_ms=mark()-phase;phase=mark();
   controller.set_inputs(JSON.stringify(Array.from(raw,(value,i)=>['policyAction['+(i+1)+']',value])));
-  const mapped=JSON.parse(controller.state_json()).values;
+  const mapped=commandReadout();
   session.set_inputs(JSON.stringify([...(message.inputs??[]),['usePolicyPosition',1],...routed(mapped,'positionCommand','policyPosition',15)]));
   timing.mapping_ms=mark()-phase;phase=mark();
   session.advance_to(message.time);timing.physics_ms=mark()-phase;phase=mark();previous=new Float32Array(raw);
