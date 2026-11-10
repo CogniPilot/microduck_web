@@ -12,7 +12,7 @@ async function fixture(run) {
   const root = await mkdtemp(path.join(tmpdir(), 'microduck-package-'));
   try {
     const site = path.join(root, 'site');
-    const required = ['index.html','app.js','physics.worker.js','policy-contract.js',
+    const required = ['index.html','app.js','physics.worker.js','walk-runner.js','policy-contract.js',
       'walking-controls.js','sources/manifest.json','policies/velstand.onnx'];
     for (const file of required) {
       await mkdir(path.dirname(path.join(site,file)), {recursive:true});

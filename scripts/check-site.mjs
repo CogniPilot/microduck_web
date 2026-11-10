@@ -3,7 +3,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 
 const root = path.resolve(process.argv[2] ?? 'site');
-for (const name of ['index.html', 'app.js', 'physics.worker.js', 'policy-contract.js',
+for (const name of ['index.html', 'app.js', 'physics.worker.js', 'walk-runner.js', 'policy-contract.js',
   'walking-controls.js', 'sources/manifest.json', 'policies/velstand.onnx']) {
   if (!(await stat(path.join(root, name))).isFile()) throw Error(`Missing site file: ${name}`);
 }
