@@ -12,7 +12,7 @@ JavaScript handles the UI, Three.js rendering, rendered RGB/ToF input, transport
 
 ## Licences and provenance
 
-Pollen's robot code/MJCF is Apache-2.0. Its43 STL meshes are CC BY-NC-SA4.0, with noncommercial and share-alike conditions; they are not Apache-2.0. See third_party/microduck_rl/LICENSE-MODELS.md and LICENSE. All43 are unchanged from upstream bae39f5900b318f7e87fc485c30a31213cfa14eb: no local decimation. Three.js, Monaco and ONNX Runtime retain their MIT licences. MSL and MultiBodyLie retain the included licence/notice files. SLAM-WEB-LICENSE covers the adapted editor integration.
+Pollen's scene/loader code and robot MJCF are Apache-2.0. The viewer loads pollen/microduck.glb under the inherited CC BY-NC-SA 4.0 mesh terms, with noncommercial and share-alike conditions; the geometry is not Apache-2.0. See pollen/MESH-LICENSE.txt, pollen/NOTICE and pollen/SOURCE.json for the exact sources, credit and conversion basis. The GLB bytes are unchanged; creased normals are recomputed at load time. Raw STL files and the unused older simulation runtime are not published. robot.xml remains the body/joint/sensor description and names geometry keys within the GLB. Three.js, Monaco and ONNX Runtime retain their MIT licences. MSL and MultiBodyLie retain the included licence/notice files. SLAM-WEB-LICENSE covers the adapted editor integration.
 
 The pretrained velstand.onnx comes from pollen-robotics/microduck-policies at283771bcb3690a0a94a288c108365d9b630d21e4 (Apache-2.0). policies/DOWNLOADS.json retains URLs and hashes; only velstand.onnx is bundled, while the unmodified upstream manifest describes additional policies not included here.
 

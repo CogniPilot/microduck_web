@@ -38,7 +38,7 @@ root records `schema_version: 1`, a nonempty `decision` reference to the explici
 owner approval, and `files`, an object mapping every site-relative STL path to
 its SHA-256. The set and hashes must match exactly. The publisher must verify the
 decision's authority during review; this file check cannot authenticate an owner.
-The application payload supplies the exact real-mesh inventory and owner decision reference. The tests use only a synthetic mesh and a clearly labelled synthetic test approval.
+The current viewer loads one compact GLB from site/pollen/microduck.glb. Raw STL assets are not published. robot.xml remains the body, joint and sensor description; its mesh filenames are lookup keys into the GLB. The historical mesh-clearance.json remains as provenance for the earlier STL publication. The tests use only a synthetic mesh and a clearly labelled synthetic test approval.
 
 The checks fail if the site is missing. Hosted Actions and the real Pages URL still need verification after publication.
 
@@ -51,7 +51,7 @@ Pollen Robotics' Microduck XML is Apache-2.0; its STL meshes at upstream revisio
 Before distributing meshes, include upstream
 [LICENSE-MODELS.md](third_party/microduck_rl/LICENSE-MODELS.md), credit Pollen
 Robotics, link the upstream repository and license, and disclose modifications
-including any decimation. The included mesh-clearance.json records the publish decision and all43 exact hashes. No local decimation or other mesh modification was performed.
+including any decimation. The historical mesh-clearance.json records the earlier STL publish decision and all 43 exact hashes. The current GLB has separate provenance and inherited mesh terms in site/pollen/MESH-LICENSE.txt and site/pollen/SOURCE.json. Its bytes are unchanged; creased normals are recomputed for rendering at load time.
 Pretrained-policy and other vendor licenses/provenance belong to the site packet.
 
 The verbatim upstream Microduck license texts are labelled under
