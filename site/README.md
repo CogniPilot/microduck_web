@@ -16,13 +16,13 @@ Pollen's scene/loader code and robot MJCF are Apache-2.0. The viewer loads polle
 
 The pretrained velstand.onnx comes from pollen-robotics/microduck-policies at283771bcb3690a0a94a288c108365d9b630d21e4 (Apache-2.0). policies/DOWNLOADS.json retains URLs and hashes; only velstand.onnx is bundled, while the unmodified upstream manifest describes additional policies not included here.
 
-Physics uses the build pinned in vendor/rumoca-56406296-locals-release/BUILD-PIN.json, an unmerged compiler revision with fixed-shape Wasm locals enabled. The editor retains its separately pinned 6fd79278 build for this demo. The Modelica source/dependency pins are retained alongside the source manifest.
+Physics uses the build pinned in vendor/rumoca-1b2d5fdc-locals-release/BUILD-PIN.json, an unmerged compiler revision with fixed-shape Wasm locals enabled. The editor retains its separately pinned 6fd79278 build for this demo. The Modelica source/dependency pins are retained alongside the source manifest.
 
 The stateless Modelica policy adapter matches native robotd Walk defaults: command EMA0.2, raw action scale0.9, head/leg target low-pass0.5/0.7,61 observations and14 raw actions at50Hz. JavaScript holds the previous Modelica outputs between ticks. Absolute proposed targets go directly to the Modelica servos, which retain physical joint limits. The separate mouth stays closed. Optional native skills, alternate policies and hardware safety/servo calibration are outside this walking demo.
 
 ## Precompiled default models
 
-The fixed plant and policy interface are exported at site build time by `npm run build:prebuilt`, using the same pinned56406296 WASM module as the browser. Opaque gzip artifacts retain the Rust-owned complete-source/model/compiler key. The unchanged default loads these artifacts; editing Modelica source or a companion changes that key and explicitly compiles the edited source. A mismatched compiler/model or damaged published artifact refuses instead of silently compiling the default. No JavaScript IR decoding or physics math is introduced.
+The fixed plant and policy interface are exported at site build time by `npm run build:prebuilt`, using the same pinned1b2d5fdc WASM module as the browser. Opaque gzip artifacts retain the Rust-owned complete-source/model/compiler key. The unchanged default loads these artifacts; editing Modelica source or a companion changes that key and explicitly compiles the edited source. A mismatched compiler/model or damaged published artifact refuses instead of silently compiling the default. No JavaScript IR decoding or physics math is introduced.
 
 This caches Modelica source compilation, not the whole prepared runtime. Preparation remains separate from the live speed readout. The artifact and WASM must be regenerated together from one compiler revision.
 
