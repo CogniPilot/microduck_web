@@ -68,3 +68,9 @@ footer a{color:#d4d4df}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 @media(max-width:700px){.intro{background:linear-gradient(90deg,#08080cf5,#08080cb0)}.touch-drive{bottom:65px}.touch-drive small{display:none}.walking-help{bottom:122px}.simulation-controls{bottom:156px}.view-bottom{bottom:231px}footer{font-size:9px}.sensor-panel .panel-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.6fr);align-items:start;gap:8px}.sensor-panel #sensor-status{grid-column:1/-1}.sensor-panel h2{font-size:20px}}
 @media(max-width:700px){body:not(.entered) .simulation-controls{bottom:80px}}
+
+.simulation-controls #simulation-speed,.simulation-controls #demo-configuration{flex:0 0 100%;min-width:0;color:#ffffffc4}
+.simulation-controls #demo-configuration{font-size:9px;line-height:1.4}
+
+.simulation-controls{z-index:12}.view-bottom{bottom:290px}
+@media(max-width:700px){.view-bottom{bottom:375px}}

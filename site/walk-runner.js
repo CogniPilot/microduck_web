@@ -1,3 +1,4 @@
+import {createRealtimeFactor} from './realtime-factor.js';
 // Policy and physics advance in the worker; display delivery never gates a step.
 export function createWalkRunner({step, time, send, schedule, clock=()=>performance.now()}) {
   let current, lastGeneration = 0;
@@ -13,12 +14,12 @@ export function createWalkRunner({step, time, send, schedule, clock=()=>performa
     if (run.outstanding || !run.frame || run.sent === run.sequence) return;
     run.sent = run.sequence;
     run.outstanding = true;
-    send({type: 'walk_frame', generation: run.generation, sequence: run.sent, result: run.frame});
+    send({type: 'walk_frame', generation: run.generation, sequence: run.sent, result: run.frame, speed: run.speed});
   }
   function finish(run) {
     if (run.running || run.busy || run.finished) return;
     run.finished = true;
-    const result = {generation: run.generation, time: time(), frame: run.frame, reason: run.reason};
+    const result = {generation: run.generation, time: time(), frame: run.frame, reason: run.reason, speed: run.speed};
     if (run.error) send({type: 'walk_error', generation: run.generation, error: String(run.error)});
     else send({type: 'walk_done', ...result});
     for (const waiter of run.waiters) run.error ? waiter.reject(run.error) : waiter.resolve(result);
@@ -44,6 +45,7 @@ export function createWalkRunner({step, time, send, schedule, clock=()=>performa
         if (!Number.isFinite(frame.time) || Math.abs(frame.time - target) > 1e-10)
           throw new Error('Walking step returned an unexpected simulation time.');
         run.frame = frame;
+        run.speed = run.rate.sample(frame.time);
         run.sequence++;
         publish(run);
         if (frame.outputs.fallen) { run.running = false; run.reason = 'fallen'; }
@@ -64,7 +66,8 @@ export function createWalkRunner({step, time, send, schedule, clock=()=>performa
       if(!['realtime','unpaced'].includes(mode))throw new Error('Invalid walking pacing mode.');
       const control = controls(twist, inputs);
       if (!Number.isFinite(time())) throw new Error('Walking requires a prepared simulation.');
-      const run = {generation, control, mode, lastStarted:clock(), sequence: 0, inputSequence: 0, sent: 0,
+      const rate=createRealtimeFactor(clock);rate.start(time());
+      const run = {generation, control, mode, rate, speed:null, lastStarted:clock(), sequence: 0, inputSequence: 0, sent: 0,
         running: true, busy: false, scheduled: false, outstanding: false,
         frame: null, reason: 'paused', error: null, finished: false, waiters: []};
       current = run; lastGeneration = generation; next(run);

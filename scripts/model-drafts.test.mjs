@@ -55,3 +55,5 @@ test('the actual current Modelica input catalog satisfies routing before walking
       /Restore file.*previousCommand\[1\]/);
   } finally { session.free(); }
 });
+
+test('previous native-walk drafts remain downloadable without overriding demo defaults',()=>{const store=storage([['microduck-lab-draft-v3-native-walk:'+name,'native edited source']]);const drafts=modelDrafts(store);assert.equal(drafts.get(name),null);assert.deepEqual(drafts.previous([name]),{[name]:'native edited source'});});

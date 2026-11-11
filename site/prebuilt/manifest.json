@@ -1,21 +1,21 @@
 {
   "version": 1,
   "models": {
-    "Microduck": {
-      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"6fd7927819f3\",\"model_name\":\"Microduck\",\"source_sha256\":\"bca88b3f4e9b28f35d04d914a8d1af639982480b7829276232419c4c82a3636e\",\"sources_sha256\":\"bae407125b8df4fc2b687d1a4c2c9c5fa71f3e2b7a265881845b34adf6acc2ad\"}",
-      "artifact": "Microduck.json.gz",
-      "bytes": 665921,
-      "uncompressed_bytes": 12348372,
-      "sha256": "eacddb883e9c3462ef79cd313f3bb9d03dd004e81142c2620e81ec8c65c5bbea",
-      "uncompressed_sha256": "bbf73f2de0aae8c4e2ef1ea3b3c7bba92e2088f9436d502663f35332ad4bd7fd"
+    "MicroduckJawLocked": {
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"5640629649c3\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7065978b58887b99f1552d381f2a66f5eb251782876967f4278c4a6c2a0b1fa7\",\"sources_sha256\":\"80682e257885dc7d8aa19be51a2a09c15dbf5c40557cbb8b1af869a29259e03c\"}",
+      "artifact": "MicroduckJawLocked.json.gz",
+      "bytes": 668626,
+      "uncompressed_bytes": 12355531,
+      "sha256": "5d806d95b144eaa73feaee8240332c35029a8cdd15090b8c4962a5f4d2348ee4",
+      "uncompressed_sha256": "771f55de81e80392c60e8178a66573d64c0ce6e10594f5d59ed86c7d3b60b9fe"
     },
     "MicroduckPolicyInterface": {
-      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"6fd7927819f3\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"40d2e60f40f007f46507429b24559f05f6f2d1de1096526cf333f536a4a99fdc\",\"sources_sha256\":\"8063f8307260c013f64480c21bb7b29ce63e28918a66e139a8c9e3812700875a\"}",
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"5640629649c3\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"40d2e60f40f007f46507429b24559f05f6f2d1de1096526cf333f536a4a99fdc\",\"sources_sha256\":\"58fbd68058c4d39a88bc84b7f78b4eff9560e3fe2e634f38538c89c41bf70ede\"}",
       "artifact": "MicroduckPolicyInterface.json.gz",
-      "bytes": 264014,
-      "uncompressed_bytes": 1609986,
-      "sha256": "adefee0cf888b81a0adec8680742d16c495222b8126c3dc1763bbbc4c81b1ea1",
-      "uncompressed_sha256": "c31ef8160f33e3ec194a2874dc8a87bf406e6d3c444ef12a6ed8d313b2eafed7"
+      "bytes": 267259,
+      "uncompressed_bytes": 1621257,
+      "sha256": "a11b3a530fcea9848d647ef203041e99ad4b3726f5646953b20224807617ec36",
+      "uncompressed_sha256": "c930faed02e0e611ab0f6901be7638f4fdb9940a5201d6b403fb1a919b68616d"
     }
   }
 }

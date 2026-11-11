@@ -129,3 +129,5 @@ test('explicit unpaced mode advances without a pacing delay and invalid modes re
   assert(f.starts.every(x=>x===0));assert(f.delays.every(x=>x===0));
   await f.runner.stop({generation:1});
 });
+
+test('worker speed uses simulation progress over worker wall time independently of page ack',async()=>{const f=fixture();start(f);await f.tick();assert.equal(f.messages[0].speed.factor,1);f.advanceWall(60);await f.tick();assert.equal(f.commands.length,2);f.runner.acknowledge({generation:1,sequence:1});const speed=f.messages.at(-1).speed;assert.equal(speed.simulatedSeconds,.04);assert.equal(speed.wallSeconds,.08);assert.equal(speed.factor,.5);const stopped=await f.runner.stop({generation:1});assert.deepEqual(stopped.speed,speed);});

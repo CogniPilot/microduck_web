@@ -291,6 +291,111 @@ package MultiBodyLie "MSL MultiBody rewritten on articulated-body connectors (la
         x[i] := x[i] / L[i, i];
       end for;
     end solveSPD;
+    function axisRotation "Parent <- child rotation by angle about unit axis n (Rodrigues)"
+      input Real n[3];
+      input Real angle;
+      output Real R[3, 3];
+    algorithm
+      R := cos(angle) * identity(3) + sin(angle) * skew(n) + (1 - cos(angle)) * {{n[i] * n[j] for j in 1:3} for i in 1:3};
+    end axisRotation;
+    function floatingTreeDynamics "CRBA mass and RNEA bias for a free root and revolute tree"
+      input Integer parent[:] "Root is body 1 with parent 0; every other parent precedes its child";
+      input Real offset[size(parent, 1) - 1, 3] "Parent-frame vector to each joint origin [m]";
+      input Real fixedRotation[size(parent, 1) - 1, 3, 3] "Joint-mount frame -> parent-body rotation";
+      input Real axis[size(parent, 1) - 1, 3] "Joint axis in its mount frame; normalized as in Revolute";
+      input Real angle[size(parent, 1) - 1](each unit = "rad");
+      input Real speed[size(parent, 1) + 5] "Root {w; v} in body coordinates, then relative joint speeds";
+      input Real inertia[size(parent, 1), 6, 6] "Body spatial inertias about their frame origins";
+      input Real armature[size(parent, 1) - 1](each unit = "kg.m2") "Reflected joint inertias, nonnegative";
+      input Real gravityBody[3](each unit = "m/s2") "World gravity resolved in root-body coordinates";
+      input Real effort[size(parent, 1) + 5] "Root-body {torque; force}, then shaft torques BEFORE armature";
+      output Real massMatrix[size(parent, 1) + 5, size(parent, 1) + 5];
+      output Real bias[size(parent, 1) + 5] "Coriolis, centrifugal and gravity efforts";
+      output Real acceleration[size(parent, 1) + 5] "Body-coordinate derivative of root {w; v}, then joint accelerations";
+    protected
+      Integer n = size(parent, 1);
+      Real transform[size(parent, 1), 6, 6];
+      Real subspace[size(parent, 1), 6];
+      Real velocity[size(parent, 1), 6];
+      Real biasAcceleration[size(parent, 1), 6];
+      Real wrench[size(parent, 1), 6];
+      Real composite[size(parent, 1), 6, 6];
+      Real unitAxis[3];
+      Real childFromParent[3, 3];
+      Real force[6];
+      Integer ancestor;
+      Integer dof;
+    algorithm
+      assert(n >= 1, "floatingTreeDynamics needs a floating root");
+      assert(parent[1] == 0, "floatingTreeDynamics root parent must be zero");
+      massMatrix := zeros(n + 5, n + 5);
+      bias := zeros(n + 5);
+      transform := zeros(n, 6, 6);
+      subspace := zeros(n, 6);
+      velocity := zeros(n, 6);
+      biasAcceleration := zeros(n, 6);
+      wrench := zeros(n, 6);
+      composite := inertia;
+      unitAxis := zeros(3);
+      childFromParent := identity(3);
+      force := zeros(6);
+      ancestor := 1;
+      dof := 1;
+      transform[1, :, :] := identity(6);
+      velocity[1, :] := speed[1:6];
+      biasAcceleration[1, :] := cat(1, zeros(3), -gravityBody);
+
+      // One outward pass, in exactly the component library's local frames.
+      for i in 2:n loop
+        assert(parent[i] >= 1 and parent[i] < i, "floatingTreeDynamics parents must precede children");
+        assert(axis[i - 1, :] * axis[i - 1, :] > 0, "floatingTreeDynamics joint axis must be nonzero");
+        assert(armature[i - 1] >= 0, "floatingTreeDynamics armature must be nonnegative");
+        unitAxis := axis[i - 1, :] / sqrt(axis[i - 1, :] * axis[i - 1, :]);
+        childFromParent := transpose(axisRotation(unitAxis, angle[i - 1])) * transpose(fixedRotation[i - 1, :, :]);
+        transform[i, :, :] := motionTransform(childFromParent, offset[i - 1, :]);
+        subspace[i, :] := cat(1, unitAxis, zeros(3));
+        velocity[i, :] := transform[i, :, :] * velocity[parent[i], :] + subspace[i, :] * speed[i + 5];
+        biasAcceleration[i, :] := transform[i, :, :] * biasAcceleration[parent[i], :]
+          + crm(velocity[i, :]) * (subspace[i, :] * speed[i + 5]);
+      end for;
+
+      // RNEA with zero generalized acceleration; no contact or per-body loads.
+      for i in 1:n loop
+        wrench[i, :] := inertia[i, :, :] * biasAcceleration[i, :]
+          - transpose(crm(velocity[i, :])) * (inertia[i, :, :] * velocity[i, :]);
+      end for;
+      for i in n:-1:2 loop
+        bias[i + 5] := subspace[i, :] * wrench[i, :];
+        wrench[parent[i], :] := wrench[parent[i], :] + transpose(transform[i, :, :]) * wrench[i, :];
+        composite[parent[i], :, :] := composite[parent[i], :, :]
+          + transpose(transform[i, :, :]) * composite[i, :, :] * transform[i, :, :];
+      end for;
+      bias[1:6] := wrench[1, :];
+
+      // CRBA: propagate each joint's composite momentum to its ancestors.
+      massMatrix[1:6, 1:6] := composite[1, :, :];
+      for i in 2:n loop
+        dof := i + 5;
+        force := composite[i, :, :] * subspace[i, :];
+        massMatrix[dof, dof] := subspace[i, :] * force + armature[i - 1];
+        ancestor := i;
+        for depth in 1:n loop
+          if ancestor > 1 then
+            force := transpose(transform[ancestor, :, :]) * force;
+            ancestor := parent[ancestor];
+            if ancestor > 1 then
+              massMatrix[ancestor + 5, dof] := subspace[ancestor, :] * force;
+              massMatrix[dof, ancestor + 5] := massMatrix[ancestor + 5, dof];
+            else
+              massMatrix[1:6, dof] := force;
+              massMatrix[dof, 1:6] := force;
+            end if;
+          end if;
+        end for;
+      end for;
+      acceleration := solveSPD(massMatrix, effort - bias);
+      annotation(Documentation(info = "<html><p>Free-root tree dynamics by the composite rigid-body and recursive Newton-Euler algorithms (Featherstone, <i>Rigid Body Dynamics Algorithms</i>, 2008). It reuses this package's spatial transforms and cross products; it does not change the component dynamics or select an integrator.</p><p>Body 1 is free, and each following body has one revolute joint. The generalized ordering is root angular velocity, root linear velocity, then joints in body order. Root velocities and their coordinate derivatives are resolved in the root body. Thus world linear acceleration is <code>transpose(T)*(acceleration[4:6] + cross(w,v))</code>, where T maps world to root coordinates. Fixed rotations map the joint-mount frame to the parent body; offsets are resolved in the parent body. Spatial inertia is about each body's frame origin, as returned by <a href=\"modelica://MultiBodyLie.Math.spatialInertia\">spatialInertia</a>.</p><p>The first six effort entries are a wrench at the root origin. Joint effort is applied shaft torque before reflected armature acceleration, not the component's net <code>tau</code>. Other body loads and contacts are absent. Inputs require a topologically ordered tree, valid rotations and positive-definite physical inertia; no regularization or invented inertia is supplied. The dense mass output is intended for subsequent contact construction, not as a replacement for the existing articulated-body component pass.</p></html>"));
+    end floatingTreeDynamics;
   end Math;
 
   package Parts
@@ -594,7 +699,7 @@ package MultiBodyLie "MSL MultiBody rewritten on articulated-body connectors (la
   end Parts;
 
   package Joints
-    model Revolute "Revolute joint about n, optionally driven through its axis flange; either direction (MSL names)"
+    partial model PartialServoJoint "Servo joint connector and coordinate interface"
       Modelica.Mechanics.Rotational.Interfaces.Flange_a axis "Always present; unconnected means tau = 0 (useAxisFlange kept for MSL compatibility)";
       Modelica.Mechanics.Rotational.Interfaces.Flange_b support "Joint housing on frame_a: angle 0; its reaction is internal to the joint torque";
       Interfaces.Frame_a frame_a;
@@ -610,6 +715,10 @@ package MultiBodyLie "MSL MultiBody rewritten on articulated-body connectors (la
       Real w(start = 0, stateSelect = stateSelect);
       Real a "= der(w)";
       Real tau(unit="N.m") "Net shaft torque after accelerating the reflected rotor";
+    end PartialServoJoint;
+
+    model Revolute "Revolute joint about n, optionally driven through its axis flange; either direction (MSL names)"
+      extends PartialServoJoint;
     protected
       // Pure rotation: X = diag(E, E) (frame_b <- frame_a), applied blockwise; X' S X by Math.rotateInertia.
       Real E[3, 3] = transpose(LieGroups.SO3.Dcm.exp_map(e * phi)) "frame_b <- frame_a";
