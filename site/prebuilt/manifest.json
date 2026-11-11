@@ -2,14 +2,24 @@
   "version": 1,
   "models": {
     "MicroduckJawLocked": {
+      "format": "precompiled-runtime",
       "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"1b2d5fdc826a\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7065978b58887b99f1552d381f2a66f5eb251782876967f4278c4a6c2a0b1fa7\",\"sources_sha256\":\"80682e257885dc7d8aa19be51a2a09c15dbf5c40557cbb8b1af869a29259e03c\"}",
       "artifact": "MicroduckJawLocked.json.gz",
       "bytes": 668626,
       "uncompressed_bytes": 12355531,
       "sha256": "4495ef40036a6d83ec86f40482e58c1b5f8eef9de73d8525aa229329325ee8ae",
-      "uncompressed_sha256": "0b1f550832d5ea97a475910704dca36ddc9ea01e236710d503a6ae7f3bfb7ff4"
+      "uncompressed_sha256": "0b1f550832d5ea97a475910704dca36ddc9ea01e236710d503a6ae7f3bfb7ff4",
+      "runtime": {
+        "key": "{\"schema\":2,\"model\":{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"1b2d5fdc826a\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7065978b58887b99f1552d381f2a66f5eb251782876967f4278c4a6c2a0b1fa7\",\"sources_sha256\":\"80682e257885dc7d8aa19be51a2a09c15dbf5c40557cbb8b1af869a29259e03c\"},\"options_sha256\":\"1cf3dabefb0f646bb7afb10e4679d3c39be57e95edf15eee388dd6b9db0b47c4\"}",
+        "artifact": "MicroduckJawLocked.runtime.bin.gz",
+        "bytes": 5903277,
+        "uncompressed_bytes": 58262246,
+        "sha256": "f709ba3d03a55ba675656521e2a4aed782350b93f14cfa2132f975779f069782",
+        "uncompressed_sha256": "f235873e3fd3f2bb975266c061d918d27bcc2d5727396dbb35159a099cec4327"
+      }
     },
     "MicroduckPolicyInterface": {
+      "format": "prebuilt-dae",
       "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"1b2d5fdc826a\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"40d2e60f40f007f46507429b24559f05f6f2d1de1096526cf333f536a4a99fdc\",\"sources_sha256\":\"58fbd68058c4d39a88bc84b7f78b4eff9560e3fe2e634f38538c89c41bf70ede\"}",
       "artifact": "MicroduckPolicyInterface.json.gz",
       "bytes": 267258,

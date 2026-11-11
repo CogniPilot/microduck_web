@@ -70,7 +70,7 @@ function applyPhysics(state) {
   physicsTime = state.time;
   showSensors(state);
   $('view-mode').textContent = 'Modelica simulation · t = ' + state.time.toFixed(3) + ' s';
-  $('simulation-status').textContent = state.preparation ? (state.preparation.plant==='prebuilt'&&state.preparation.controller==='prebuilt'?'Simulation ready · compiled models loaded.':'Simulation ready · edited source compiled.') : state.control ? 'Pretrained Pollen velstand · Modelica physics.' : 'Standing controller · Modelica physics.';
+  $('simulation-status').textContent = state.preparation ? (['prebuilt','precompiled-runtime'].includes(state.preparation.plant)&&state.preparation.controller==='prebuilt'?'Simulation ready · compiled models loaded.':'Simulation ready · edited source compiled.') : state.control ? 'Pretrained Pollen velstand · Modelica physics.' : 'Standing controller · Modelica physics.';
 }
 function watchWalking(){clearTimeout(walkTimer);walkTimer=setTimeout(()=>stopPhysics('Simulation exceeded its time budget. No new pose was applied.'),360000);}
 function walkingInputs(){return renderedFrame?sensorInputs(renderedFrame,physicsTime):null;}
