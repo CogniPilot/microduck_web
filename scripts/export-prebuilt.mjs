@@ -7,7 +7,7 @@ const sources=JSON.parse(fs.readFileSync(new URL('msl-sources.json',site)));
 for(const name of JSON.parse(fs.readFileSync(new URL('sources/manifest.json',site))))sources[name]=fs.readFileSync(new URL('sources/'+name,site),'utf8');
 const manifest={version:1,models:{}};fs.mkdirSync(output,{recursive:true});
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
-for(const model of ['Microduck','MicroduckPolicyInterface']){
+for(const model of ['MicroduckJawLocked','MicroduckPolicyInterface']){
  const start=performance.now(),set=modelSourceSet(sources,model);
  const key=compiler.prebuilt_artifact_key(set.source,model,set.workspace);
  const artifact=compiler.export_prebuilt_artifact(set.source,model,set.workspace);

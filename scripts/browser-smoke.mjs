@@ -51,6 +51,15 @@ try {
   await page.locator('#step-simulation').click();
   await page.waitForFunction(() => document.querySelector('#view-mode').textContent.includes('0.020'), null, {timeout:60000});
   result.step = await page.locator('#view-mode').innerText();
+  assert.match(await page.locator('#demo-configuration').innerText(), /softened contacts and relaxed RK tolerances/);
+  await page.locator('#walk-mode').click();
+  await page.waitForFunction(() => /Live speed: [0-9]+\.[0-9]+× real time/.test(document.querySelector('#simulation-speed').textContent), null, {timeout:60000});
+  result.live_speed = await page.locator('#simulation-speed').innerText();
+  result.overlay_visibility = await page.evaluate(() => Object.fromEntries(['simulation-speed','demo-configuration'].map(id=>{const element=document.getElementById(id),r=element.getBoundingClientRect(),hit=document.elementFromPoint(r.left+Math.min(10,r.width/2),r.top+r.height/2);return [id,{inside:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,uncovered:hit===element||element.contains(hit)}];})));
+  for(const value of Object.values(result.overlay_visibility)){assert.equal(value.inside,true);assert.equal(value.uncovered,true);}
+  assert.ok(Number(result.live_speed.match(/Live speed: ([0-9.]+)/)[1]) > 0);
+  await page.locator('#walk-mode').click();
+  await page.waitForFunction(() => !document.querySelector('#step-simulation').disabled, null, {timeout:60000});
   await page.screenshot({path:path.join(output,'pages.png'),fullPage:true});
   await page.locator('#stop-simulation').click();
   assert.deepEqual(result.page_errors, []);

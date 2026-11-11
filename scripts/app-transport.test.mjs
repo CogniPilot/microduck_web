@@ -21,7 +21,7 @@ function fixture(ready=Promise.resolve()){
    reply(label,type='prepare',time=0){const command=this.commands.findLast(x=>x.type===type);assert(command);this.onmessage({data:{id:command.id,result:{label,time,outputs:{},preparation:{plant:'prebuilt',controller:'prebuilt'}}}});}
   }};
  // Keep the observer in this exact page realm, outside the source under test.
- const withApplied=new Function('applied',...Object.keys(sandbox),'globalThis',prefix+'\nrobotView={restore(){},apply(state){applied.push(state.label);}};return {stopPhysics,ready:()=>physicsReady};');
+ const withApplied=new Function('applied',...Object.keys(sandbox),'globalThis',prefix+'\nrobotView={restore(){},apply(state){applied.push(state.label);}};return {stopPhysics,startWalking,ready:()=>physicsReady};');
  const api=withApplied(applied,...Object.values(sandbox),sandbox);
  return {workers,applied,element,api,prepare:()=>element('prepare-simulation').onclick(),step:()=>element('step-simulation').onclick(),setReady:p=>{sandbox.microduckSourcesReady=p;}};
 }
@@ -58,3 +58,5 @@ test('old manual-step success cannot apply or enable controls during new prepara
  assert.deepEqual(f.applied,['A']);assert.equal(f.element('step-simulation').disabled,true);
  f.workers[1].reply('B');await next;assert.deepEqual(f.applied,['A','B']);
 });
+
+test('live walking displays the worker clock factor rather than page delivery latency',async()=>{const f=fixture();const preparing=f.prepare();await drain();f.workers[0].reply('ready');await preparing;const started=f.api.startWalking([0,0,0]);f.workers[0].reply('started','walk_start');await started;const generation=f.workers[0].commands.find(x=>x.type==='walk_start').generation;f.workers[0].onmessage({data:{type:'walk_frame',generation,sequence:1,result:{label:'live',time:.02,outputs:{}},speed:{factor:.5,simulatedSeconds:.02,wallSeconds:.04}}});assert.match(f.element('simulation-speed').textContent,/0.50× real time/);f.api.stopPhysics();assert.equal(f.element('simulation-speed').textContent,'Live speed: —');});

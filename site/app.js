@@ -22,6 +22,9 @@ let physicsPending;
 let physicsGeneration=0;
 let replayGeneration = 0;
 let walkGeneration=0,walkRun,walkTimer,walkStopping=false;
+function showWalkRate(sample){
+  if(sample&&Number.isFinite(sample.factor)&&sample.wallSeconds>0)$('simulation-speed').textContent='Live speed: '+sample.factor.toFixed(2)+'× real time · '+sample.simulatedSeconds.toFixed(2)+' s simulated / '+sample.wallSeconds.toFixed(2)+' s elapsed';
+}
 const walking=createWalkingControls({
   button:$('walk-mode'),status:$('walk-command'),
   canRun:()=>!!physicsWorker&&physicsReady&&!walkStopping,
@@ -33,6 +36,7 @@ function stopPhysics(message = 'Simulation stopped. Pose controls restored.') {
   replayGeneration++;
   physicsGeneration++;
   walkGeneration++;walkRun=undefined;walkStopping=false;clearTimeout(walkTimer);
+  $('simulation-speed').textContent='Live speed: —';
   physicsReady=false; walking.finish(); $('walk-mode').disabled=true;
   physicsWorker?.terminate(); physicsWorker = undefined;
   if (physicsPending) { clearTimeout(physicsPending.timer); physicsPending.reject(new Error(message)); physicsPending = undefined; }
@@ -77,14 +81,14 @@ function updateWalking(twist=walking.command()){
 }
 async function startWalking(twist){
   if(walkRun||walkStopping)throw Error('Walking is already running.');
-  const run={generation:++walkGeneration,inputSequence:0,displaySequence:0};walkRun=run;watchWalking();
+  const run={generation:++walkGeneration,inputSequence:0,displaySequence:0};walkRun=run;$('simulation-speed').textContent='Live speed: measuring…';watchWalking();
   try{await physicsCommand({type:'walk_start',generation:run.generation,mode:'realtime',twist,inputs:walkingInputs()});}
   catch(error){if(walkGeneration!==run.generation)return;if(walkRun===run)walkRun=undefined;clearTimeout(walkTimer);throw error;}
 }
 async function pauseWalking(){
   const run=walkRun;if(!run)return;
   walkStopping=true;$('step-simulation').disabled=true;
-  try{const state=await physicsCommand({type:'walk_stop',generation:run.generation});if(state.frame&&state.frame.time>physicsTime)applyPhysics(state.frame);}
+  try{const state=await physicsCommand({type:'walk_stop',generation:run.generation});if(state.frame&&state.frame.time>physicsTime)applyPhysics(state.frame);showWalkRate(state.speed);}
   finally{if(walkGeneration===run.generation){if(walkRun===run)walkRun=undefined;walkStopping=false;clearTimeout(walkTimer);$('step-simulation').disabled=!physicsReady;}}
 }
 function walkingMessage(data){
@@ -92,11 +96,11 @@ function walkingMessage(data){
   if(data.generation!==walkRun?.generation)return true;
   if(data.type==='walk_error'){stopPhysics('Walking stopped: '+data.error);return true;}
   if(data.type==='walk_done'){
-    if(data.frame&&data.frame.time>physicsTime)applyPhysics(data.frame);
+    if(data.frame&&data.frame.time>physicsTime)applyPhysics(data.frame);showWalkRate(data.speed);
     walkRun=undefined;clearTimeout(walkTimer);if(!walkStopping)walking.finish(data.reason);return true;
   }
   if(!Number.isSafeInteger(data.sequence)||data.sequence<=walkRun.displaySequence)return true;
-  walkRun.displaySequence=data.sequence;applyPhysics(data.result);watchWalking();
+  walkRun.displaySequence=data.sequence;applyPhysics(data.result);showWalkRate(data.speed);watchWalking();
   physicsWorker.postMessage({type:'walk_ack',generation:data.generation,sequence:data.sequence});return true;
 }
 async function prepareSimulation() {
@@ -120,7 +124,7 @@ async function prepareSimulation() {
     worker.onerror = event => {if(physicsWorker===worker)stopPhysics('Simulation worker failed: ' + event.message);};
     const sources = Object.fromEntries(sourceFiles.map(name =>
       [name, name === selectedFile ? $('editor').value : savedDraft(name) ?? originals.get(name)]));
-    const state=await physicsCommand({type: 'prepare', sources, model: 'Microduck'});
+    const state=await physicsCommand({type: 'prepare', sources, model: 'MicroduckJawLocked'});
     if(physicsGeneration!==generation||physicsWorker!==worker)return;
     applyPhysics(state);
     physicsReady=true; $('walk-mode').disabled=false;

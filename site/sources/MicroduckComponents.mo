@@ -126,10 +126,12 @@ package MicroduckComponents "Editable component defaults for the Microduck assem
   model Head
     parameter Real jawMass=0.005;
     parameter Real jawLength=0.03;
+    parameter Real lumpedInertia[6]={0.000320812,0.0002541,0.000149882,-6.32289e-7,6.57154e-6,4.18475e-6}
+      "Imported head/jaw COM inertia: xx, yy, zz, xy, xz, yz";
     final parameter Real jawToHead[3,3]=LieGroups.SO3.Quat.to_DCM(LieGroups.SO3.Quat.normalize({0.704015,-0.0,0.710185,0.0}));
     final parameter Real jawCentreInHead[3]={-0.00809334,-0.0,-0.0777383}-jawToHead*{jawLength/2,0,0};
     final parameter Real jawInertia[3,3]={{jawMass*(0.025^2+0.012^2)/12,0,0},{0,jawMass*(jawLength^2+0.012^2)/12,0},{0,0,jawMass*(jawLength^2+0.025^2)/12}};
-    final parameter MicroduckMechanics.MassProperties properties=MicroduckMechanics.splitHead(0.188766,{0.00460523,0.00120047,-0.0324761},{0.000320812,0.0002541,0.000149882,-6.32289e-7,6.57154e-6,4.18475e-6},jawMass,jawCentreInHead,jawToHead,jawInertia);
+    final parameter MicroduckMechanics.MassProperties properties=MicroduckMechanics.splitHead(0.188766,{0.00460523,0.00120047,-0.0324761},lumpedInertia,jawMass,jawCentreInHead,jawToHead,jawInertia);
     extends MB.Parts.Body(
       m=properties.m,
       r_CM=properties.c,
@@ -363,7 +365,7 @@ package MicroduckComponents "Editable component defaults for the Microduck assem
     output Real w;
     output Real target;
     output Real torque;
-    MB.Joints.Revolute joint(n=n,useAxisFlange=true,armature=armature,phi(start=home,fixed=true),w(start=0,fixed=true));
+    replaceable MB.Joints.Revolute joint(n=n,useAxisFlange=true,armature=armature,phi(start=home,fixed=true),w(start=0,fixed=true)) constrainedby MB.Joints.PartialServoJoint;
     MicroduckMechanics.Drive rotor;
   equation
     connect(frame_a,joint.frame_a);
