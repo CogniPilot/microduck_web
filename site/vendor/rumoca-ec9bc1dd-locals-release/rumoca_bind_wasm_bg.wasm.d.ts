@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export const workspace_effective_source_roots: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const __wbg_wasmcompiledmodel_free: (a: number, b: number) => void;
 export const __wbg_wasmsimulationsession_free: (a: number, b: number) => void;
 export const compile_with_options: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
@@ -33,6 +34,8 @@ export const wasmsimulationsession_variable_names: (a: number) => [number, numbe
 export const wasmsimulationsession_withInteractiveConfiguration: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
 export const wasmsimulationsession_withInteractiveOptions: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number];
 export const wasmsimulationsession_clearPreparationCache: () => void;
+export const prepare_gpu_simulation: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const update_gpu_parameters: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
 export const browser_profile_enable: (a: number) => void;
 export const browser_profile_snapshot: () => [number, number];
 export const check: (a: number, b: number) => [number, number, number];
@@ -99,9 +102,6 @@ export const sync_workspace_sources: (a: number, b: number) => [number, number, 
 export const wasm_init: (a: number) => number;
 export const init: () => void;
 export const compile_to_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
-export const prepare_gpu_simulation: (a: number, b: number, c: number, d: number) => [number, number, number, number];
-export const update_gpu_parameters: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
-export const workspace_effective_source_roots: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const sin: (a: number) => number;
 export const cos: (a: number) => number;
 export const exp: (a: number) => number;

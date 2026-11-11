@@ -1,8 +1,0 @@
-{
-  "status": "UNMERGED_COMPILER_DEMO_BUILD",
-  "head": "1b2d5fdc826a83fed8946a0115eddae4ef0db21a",
-  "features": "full-web,rumoca-exec-wasm/diagnostic-root-scalar-locals",
-  "sdkSha256": "6a447ea6d581111f037a7639edbe55c4c3d772c283d4aaf424ab192ddaac9013",
-  "jsSha256": "4d7e54ea0d47648b920e8533111404ca599e395e4db8c2dc318365beda9c18da",
-  "rawSha256": "c0bdc69a5604c1ae46971633a6c62f92894456b81998f68e62c861fe47c93db0"
-}
