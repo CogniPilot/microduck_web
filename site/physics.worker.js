@@ -1,6 +1,7 @@
 // Modelica owns physics; the pretrained policy supplies actuator commands.
 import init, * as compiler from './model-runtime.js';
-import {createModelSession,readCompressedArtifact} from './prebuilt-session.js';
+import {createModelSession,readCompressedArtifact,readCompressedRuntimeArtifact} from './prebuilt-session.js';
+import {modelOptions} from './simulation-options.js';
 import * as ort from './vendor/onnxruntime-1.31.1/ort.js';
 import {poseFrame} from './policy-contract.js';
 import {checkControllerInputs} from './model-inputs.js';
@@ -11,8 +12,7 @@ ort.env.wasm.wasmPaths={mjs:new URL('./vendor/onnxruntime-1.31.1/ort-wasm-simd-t
 let session, controller, initialized, policy, lastValues;
 let plantReadout,observationReadout,commandReadout;
 let previous=new Float32Array(14),previousCommand=new Float64Array(3),previousPosition;
-const configuration={dt:0.002,solver:'rk-like',atol:1e-8,rtol:1e-6,
- initial_inputs:[],execution_policy:'auto',parameters:{}};
+
 function routed(values,output,input,count){
  return Array.from({length:count},(_,i)=>[input+'['+(i+1)+']',values[output+'['+(i+1)+']']]);
 }
@@ -31,7 +31,7 @@ async function execute(message){
   const started=performance.now(),response=await fetch('./prebuilt/manifest.json');
   if(!response.ok)throw Error('Precompiled model manifest is unavailable.');
   const manifest=await response.json();
-  const make=name=>createModelSession({compiler,sources,model:name,options:name==='MicroduckPolicyInterface'?configuration:{...configuration,...{"rtol":0.001,"atol":0.00001},parameters:{"leftSoleContact.k":510,"leftSoleContact.d":10.7,"leftSoleContact.mu":1,"leftSoleContact.v_eps":0.09,"rightSoleContact.k":510,"rightSoleContact.d":10.7,"rightSoleContact.mu":1,"rightSoleContact.v_eps":0.09,"trunkContact.k":510,"trunkContact.d":10.7,"trunkContact.mu":1,"trunkContact.v_eps":0.09,"leftHipYawLinkContact.k":510,"leftHipYawLinkContact.d":10.7,"leftHipYawLinkContact.mu":1,"leftHipYawLinkContact.v_eps":0.09,"leftHipRollLinkContact.k":510,"leftHipRollLinkContact.d":10.7,"leftHipRollLinkContact.mu":1,"leftHipRollLinkContact.v_eps":0.09,"leftUpperLegContact.k":510,"leftUpperLegContact.d":10.7,"leftUpperLegContact.mu":1,"leftUpperLegContact.v_eps":0.09,"leftLowerLegContact.k":510,"leftLowerLegContact.d":10.7,"leftLowerLegContact.mu":1,"leftLowerLegContact.v_eps":0.09,"leftFootContact.k":510,"leftFootContact.d":10.7,"leftFootContact.mu":1,"leftFootContact.v_eps":0.09,"neckLinkContact.k":510,"neckLinkContact.d":10.7,"neckLinkContact.mu":1,"neckLinkContact.v_eps":0.09,"headPitchLinkContact.k":510,"headPitchLinkContact.d":10.7,"headPitchLinkContact.mu":1,"headPitchLinkContact.v_eps":0.09,"headYawLinkContact.k":510,"headYawLinkContact.d":10.7,"headYawLinkContact.mu":1,"headYawLinkContact.v_eps":0.09,"headContact.k":510,"headContact.d":10.7,"headContact.mu":1,"headContact.v_eps":0.09,"rightHipYawLinkContact.k":510,"rightHipYawLinkContact.d":10.7,"rightHipYawLinkContact.mu":1,"rightHipYawLinkContact.v_eps":0.09,"rightHipRollLinkContact.k":510,"rightHipRollLinkContact.d":10.7,"rightHipRollLinkContact.mu":1,"rightHipRollLinkContact.v_eps":0.09,"rightUpperLegContact.k":510,"rightUpperLegContact.d":10.7,"rightUpperLegContact.mu":1,"rightUpperLegContact.v_eps":0.09,"rightLowerLegContact.k":510,"rightLowerLegContact.d":10.7,"rightLowerLegContact.mu":1,"rightLowerLegContact.v_eps":0.09,"rightFootContact.k":510,"rightFootContact.d":10.7,"rightFootContact.mu":1,"rightFootContact.v_eps":0.09}},manifest,readArtifact:name=>readCompressedArtifact(new URL('./prebuilt/'+name,import.meta.url))});
+  const make=name=>createModelSession({compiler,sources,model:name,options:modelOptions(name),manifest,readArtifact:name=>readCompressedArtifact(new URL('./prebuilt/'+name,import.meta.url)),readRuntimeArtifact:name=>readCompressedRuntimeArtifact(new URL('./prebuilt/'+name,import.meta.url))});
   const controlStart=performance.now(),control=await make('MicroduckPolicyInterface');controller=control.session;
   const plantStart=performance.now(),plant=await make(model);session=plant.session;
   const preparation={controller:control.mode,plant:plant.mode,controller_ms:plantStart-controlStart,plant_ms:performance.now()-plantStart,total_ms:performance.now()-started};
