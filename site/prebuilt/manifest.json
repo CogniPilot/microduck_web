@@ -2,20 +2,20 @@
   "version": 1,
   "models": {
     "MicroduckJawLocked": {
-      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"5640629649c3\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7065978b58887b99f1552d381f2a66f5eb251782876967f4278c4a6c2a0b1fa7\",\"sources_sha256\":\"80682e257885dc7d8aa19be51a2a09c15dbf5c40557cbb8b1af869a29259e03c\"}",
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"1b2d5fdc826a\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7065978b58887b99f1552d381f2a66f5eb251782876967f4278c4a6c2a0b1fa7\",\"sources_sha256\":\"80682e257885dc7d8aa19be51a2a09c15dbf5c40557cbb8b1af869a29259e03c\"}",
       "artifact": "MicroduckJawLocked.json.gz",
       "bytes": 668626,
       "uncompressed_bytes": 12355531,
-      "sha256": "5d806d95b144eaa73feaee8240332c35029a8cdd15090b8c4962a5f4d2348ee4",
-      "uncompressed_sha256": "771f55de81e80392c60e8178a66573d64c0ce6e10594f5d59ed86c7d3b60b9fe"
+      "sha256": "4495ef40036a6d83ec86f40482e58c1b5f8eef9de73d8525aa229329325ee8ae",
+      "uncompressed_sha256": "0b1f550832d5ea97a475910704dca36ddc9ea01e236710d503a6ae7f3bfb7ff4"
     },
     "MicroduckPolicyInterface": {
-      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"5640629649c3\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"40d2e60f40f007f46507429b24559f05f6f2d1de1096526cf333f536a4a99fdc\",\"sources_sha256\":\"58fbd68058c4d39a88bc84b7f78b4eff9560e3fe2e634f38538c89c41bf70ede\"}",
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"1b2d5fdc826a\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"40d2e60f40f007f46507429b24559f05f6f2d1de1096526cf333f536a4a99fdc\",\"sources_sha256\":\"58fbd68058c4d39a88bc84b7f78b4eff9560e3fe2e634f38538c89c41bf70ede\"}",
       "artifact": "MicroduckPolicyInterface.json.gz",
-      "bytes": 267259,
+      "bytes": 267258,
       "uncompressed_bytes": 1621257,
-      "sha256": "a11b3a530fcea9848d647ef203041e99ad4b3726f5646953b20224807617ec36",
-      "uncompressed_sha256": "c930faed02e0e611ab0f6901be7638f4fdb9940a5201d6b403fb1a919b68616d"
+      "sha256": "21d98b00397f83a903d9b7d9c1078b2326d79f9c709f8d66cdca16c6d711e0eb",
+      "uncompressed_sha256": "bb61f5454ca48658382d8c2bcc8790bcffaf5e1b13b44a3e7bf483f1f048d261"
     }
   }
 }
