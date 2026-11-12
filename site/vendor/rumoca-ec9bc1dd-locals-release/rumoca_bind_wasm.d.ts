@@ -536,6 +536,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly workspace_effective_source_roots: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly __wbg_wasmcompiledmodel_free: (a: number, b: number) => void;
     readonly __wbg_wasmsimulationsession_free: (a: number, b: number) => void;
     readonly compile_with_options: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
@@ -568,6 +569,8 @@ export interface InitOutput {
     readonly wasmsimulationsession_withInteractiveConfiguration: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
     readonly wasmsimulationsession_withInteractiveOptions: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number];
     readonly wasmsimulationsession_clearPreparationCache: () => void;
+    readonly prepare_gpu_simulation: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly update_gpu_parameters: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly browser_profile_enable: (a: number) => void;
     readonly browser_profile_snapshot: () => [number, number];
     readonly check: (a: number, b: number) => [number, number, number];
@@ -634,9 +637,6 @@ export interface InitOutput {
     readonly wasm_init: (a: number) => number;
     readonly init: () => void;
     readonly compile_to_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
-    readonly prepare_gpu_simulation: (a: number, b: number, c: number, d: number) => [number, number, number, number];
-    readonly update_gpu_parameters: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
-    readonly workspace_effective_source_roots: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly sin: (a: number) => number;
     readonly cos: (a: number) => number;
     readonly exp: (a: number) => number;

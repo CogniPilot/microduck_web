@@ -14,7 +14,10 @@ test('demo overrides only the physical session and retains the interactive runne
  const make=new Function('configuration','modelOptions','createModelSession','compiler','sources','manifest','readCompressedArtifact','URL',makeLine.replaceAll('import.meta.url',JSON.stringify('https://example.invalid/physics.worker.js'))+';return make;')(configuration,modelOptions,args=>args,{}, {}, {},()=>{},URL);
  assert.deepEqual(make('MicroduckPolicyInterface').options,modelOptions('MicroduckPolicyInterface'));
  const options=make('MicroduckJawLocked').options;
- assert.equal(options.rtol,1e-3);assert.equal(options.atol,1e-5);assert.equal(options.dt,.002);
+ assert.equal(options.solver,"fixed-step");assert.deepEqual(options.fixed_step,{step:.001,order:2});
+ assert.equal(options.rtol,1e-6);assert.equal(options.atol,1e-8);assert.equal(options.dt,.002);
+ assert.equal(modelOptions("MicroduckPolicyInterface").solver,"rk-like");
+ assert.equal(modelOptions("MicroduckPolicyInterface").fixed_step,undefined);
  assert.equal(Object.keys(options.parameters).length,68);
  const expected={k:510,d:10.7,mu:1,v_eps:.09};
  for(const [name,value]of Object.entries(options.parameters))assert.equal(value,expected[name.split('.').at(-1)],name);

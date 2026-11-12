@@ -51,7 +51,7 @@ try {
   await page.locator('#step-simulation').click();
   await page.waitForFunction(() => document.querySelector('#view-mode').textContent.includes('0.020'), null, {timeout:60000});
   result.step = await page.locator('#view-mode').innerText();
-  assert.match(await page.locator('#demo-configuration').innerText(), /softened contacts and relaxed RK tolerances/);
+  assert.match(await page.locator('#demo-configuration').innerText(), /softened contacts, fixed-step Heun at 1 ms/);
   await page.locator('#walk-mode').click();
   await page.waitForFunction(() => /Live speed: [0-9]+\.[0-9]+× real time/.test(document.querySelector('#simulation-speed').textContent), null, {timeout:60000});
   result.live_speed = await page.locator('#simulation-speed').innerText();
