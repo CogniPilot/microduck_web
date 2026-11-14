@@ -345,26 +345,54 @@ package MicroduckComponents "Editable component defaults for the Microduck assem
       animation=false
     );
   end RightAnkleMount;
-  model RevoluteServo
+  model RevoluteServo "Dynamixel XL330 position servo with identified DC motor, friction and 2-node thermal network"
     parameter Real n[3]={0,0,1};
     parameter Real minimum=-1.5707963267948966;
     parameter Real maximum=1.5707963267948966;
     parameter Real home=0;
     parameter Real commandCentre=home;
-    parameter Real armature=0.0018;
+    parameter Real armature=0.001573222677933975;
     parameter Real kp=0.55;
-    parameter Real damping=0.053;
-    parameter Real friction=0.0048;
+    parameter Real damping=0.005788445053875673;
+    parameter Real friction=0.011919956825702578;
+    parameter Real frictionSpeed=0.005;
     parameter Real torqueLimit=0.96;
+    parameter Real positionGain=200;
+    parameter Real gainDivisor=256;
+    parameter Real pwmLimit=885;
+    parameter Real countsPerRevolution=4096;
+    parameter Real torqueConstant=0.3459739511711113;
+    parameter Real resistance=2.501880848390462;
+    parameter Real ambientTemperature=293.15;
+    parameter Real alphaCopper=0.00393;
+    parameter Real windingHeatCapacity=1.0;
+    parameter Real housingHeatCapacity=12.0;
+    parameter Real windingToHousingConductance=0.15;
+    parameter Real housingToAmbientConductance=0.08;
+    parameter Real stopStiffness=100;
+    parameter Real stopDamping=0.9;
+    final parameter Real errorGain=positionGain*(countsPerRevolution/(2*Modelica.Constants.pi))/(gainDivisor*pwmLimit);
     input Real action;
     input Boolean usePositionTarget=false;
     input Real positionTarget=home;
+    input Real vSupply=7.4;
     MB.Interfaces.Frame_a frame_a;
     MB.Interfaces.Frame_b frame_b;
     output Real phi;
     output Real w;
     output Real target;
     output Real torque;
+    output Real drive;
+    output Real voltage;
+    output Real windingResistance;
+    output Real motorCurrent;
+    output Real supplyCurrent;
+    output Real frictionTorque;
+    output Real copperLoss;
+    output Real frictionLoss;
+    output Real windingTemperature(start=ambientTemperature,fixed=true);
+    output Real housingTemperature(start=ambientTemperature,fixed=true);
+    Real tauStop;
     replaceable MB.Joints.Revolute joint(n=n,useAxisFlange=true,armature=armature,phi(start=home,fixed=true),w(start=0,fixed=true)) constrainedby MB.Joints.PartialServoJoint;
     MicroduckMechanics.Drive rotor;
   equation
@@ -373,11 +401,63 @@ package MicroduckComponents "Editable component defaults for the Microduck assem
     connect(rotor.flange,joint.axis);
     phi=joint.phi;
     w=joint.w;
-    target=max(minimum,min(maximum,if usePositionTarget then positionTarget else commandCentre+0.5*(maximum-minimum)*max(-1,min(1,action))));
-    torque=max(-torqueLimit,min(torqueLimit,kp*(target-phi)));
-    rotor.command=torque-damping*w-friction*tanh(w/0.01)
-      +20*max(0,minimum-phi)-20*max(0,phi-maximum);
+    target=if usePositionTarget then positionTarget else max(minimum,min(maximum,commandCentre+0.5*(maximum-minimum)*max(-1,min(1,action))));
+    windingResistance=resistance*(1+alphaCopper*(windingTemperature-ambientTemperature));
+    drive=if armature>0 then max(-1,min(1,errorGain*(target-phi))) else 0;
+    voltage=vSupply*drive;
+    motorCurrent=if armature>0 then (voltage-torqueConstant*w)/windingResistance else 0;
+    supplyCurrent=drive*motorCurrent;
+    frictionTorque=if armature>0 then friction*tanh(w/frictionSpeed)+damping*w else 0;
+    copperLoss=windingResistance*motorCurrent^2;
+    frictionLoss=frictionTorque*w;
+    der(windingTemperature)=(copperLoss-windingToHousingConductance*(windingTemperature-housingTemperature))/windingHeatCapacity;
+    der(housingTemperature)=(frictionLoss+windingToHousingConductance*(windingTemperature-housingTemperature)-housingToAmbientConductance*(housingTemperature-ambientTemperature))/housingHeatCapacity;
+    torque=torqueConstant*motorCurrent-frictionTorque;
+    tauStop=if armature<=0 then 0 else if phi>maximum then -max(0,stopStiffness*(phi-maximum)+stopDamping*w) else if phi<minimum then max(0,stopStiffness*(minimum-phi)-stopDamping*w) else 0;
+    rotor.command=torque+tauStop;
   end RevoluteServo;
+  function batteryOcvRatio "29-point nonlinear Li-ion OCV/OCVmax vs SOC from MSL TransientData.ExampleData"
+    input Real soc;
+    output Real ratio;
+  protected
+    constant Real socGrid[29]={0.00,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.00};
+    constant Real ocvGrid[29]={0.595,0.656,0.688,0.714,0.737,0.744,0.750,0.754,0.756,0.758,0.761,0.774,0.786,0.795,0.804,0.811,0.818,0.826,0.835,0.843,0.855,0.871,0.888,0.905,0.926,0.943,0.964,0.980,1.000};
+    Real s;
+    Real alpha;
+  algorithm
+    s := max(0.0,min(1.0,soc));
+    ratio := ocvGrid[29];
+    for k in 1:28 loop
+      if s>=socGrid[k] and s<=socGrid[k+1] then
+        alpha := (s-socGrid[k])/(socGrid[k+1]-socGrid[k]);
+        ratio := ocvGrid[k]+alpha*(ocvGrid[k+1]-ocvGrid[k]);
+      end if;
+    end for;
+  end batteryOcvRatio;
+  model Battery2S "Two-cell NP-F550 lithium-ion pack with nonlinear OCV(SOC) and two RC polarization branches"
+    parameter Real soc0=0.68;
+    parameter Real cellCapacity=9360;
+    parameter Real cellResistance=0.05;
+    parameter Integer Ns=2;
+    parameter Real ocvMaxCell=4.2;
+    final parameter Real r0=Ns*0.7*cellResistance;
+    final parameter Real r1=Ns*0.2*cellResistance;
+    final parameter Real r2=Ns*0.1*cellResistance;
+    final parameter Real tau1=60.0;
+    final parameter Real tau2=10.0;
+    input Real iLoad;
+    output Real soc(start=soc0,fixed=true);
+    output Real vOC;
+    output Real vTerminal;
+    Real vRC1(start=0,fixed=true);
+    Real vRC2(start=0,fixed=true);
+  equation
+    der(soc)=-iLoad/cellCapacity;
+    der(vRC1)=(r1*iLoad-vRC1)/tau1;
+    der(vRC2)=(r2*iLoad-vRC2)/tau2;
+    vOC=Ns*ocvMaxCell*batteryOcvRatio(soc);
+    vTerminal=max(0.0,vOC-r0*iLoad-vRC1-vRC2);
+  end Battery2S;
   model LeftHipYawServo
     extends RevoluteServo(
       n={0.0,0.0,1.0},
