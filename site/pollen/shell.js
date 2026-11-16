@@ -1,19 +1,19 @@
 // Pollen-inspired scene entry. Ready state comes from the existing controls.
-export function createSceneShell(document) {
+export function createSceneShell(document, {onEnter} = {}) {
   const body=document.body,enter=document.getElementById('enter-scene'),menu=document.getElementById('scene-menu');
   const walk=document.getElementById('walk-mode'),prepare=document.getElementById('prepare-simulation');
-  let requested=false;
-  const entered=()=>{body.classList.add('entered');requested=false;enter.disabled=false;};
-  const observer=new MutationObserver(()=>{if(requested&&!walk.disabled)entered();});
-  observer.observe(walk,{attributes:true,attributeFilter:['disabled']});
-  observer.observe(prepare,{attributes:true,attributeFilter:['disabled']});
+  // Entry needs only the visual scene (the button is enabled by assetsReady): the live
+  // controls stay disabled until the simulation is ready, and a recorded preview, when
+  // there is one, is labelled as such meanwhile.
   enter.onclick=()=>{
-    requested=true;
-    if(!walk.disabled){entered();return;}
-    document.getElementById('loading').textContent='RUMOCA / MODELICA · preparing physics…';
-    prepare.click();
+    if(onEnter)onEnter();
+    else if(walk.disabled&&!prepare.disabled){
+      document.getElementById('loading').textContent='RUMOCA / MODELICA · preparing physics…';
+      prepare.click();
+    }
+    body.classList.add('entered');
   };
-  menu.onclick=()=>{body.classList.toggle('entered');requested=false;};
+  menu.onclick=()=>{body.classList.toggle('entered');};
   for(const button of document.querySelectorAll('button[data-panel]'))button.onclick=()=>{
     const name=button.dataset.panel,open=body.dataset.panel===name;
     body.dataset.panel=open?'':name;

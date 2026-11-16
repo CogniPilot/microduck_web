@@ -19,14 +19,16 @@ export function createSensorPreview(renderer, scene, camera, tofCamera, rgbCanva
   // Native da34a221 defaults: robotd-params Quality::Q720p30 and tofd --hz 15.
   // Preview resolution is independent of these capture cadences.
   const cameraPeriod = 1000 / 30, tofPeriod = 1000 / 15;
-  let lastCamera = -Infinity, lastTof = -Infinity, pending = false;
+  // epoch counts resets: a capture that completes after a reset delivers nothing and
+  // leaves the cached image and ranges alone.
+  let lastCamera = -Infinity, lastTof = -Infinity, pending = false, epoch = 0;
   let ranges = [], valid = [], rgba;
   const cameraTimes = [], tofTimes = [];
   const gl = renderer.getContext();
   const asynchronous = renderer.capabilities.isWebGL2;
   const debug = gl.getExtension('WEBGL_debug_renderer_info');
   const stats = {cameraTargetFps:30, tofTargetHz:15, cameraFrames:0, tofFrames:0,
-    cameraFps:0, tofHz:0, readback:asynchronous?'webgl2_async':'webgl1_sync',
+    cameraFps:0, tofHz:0, resets:0, lastDelivered:null, firstDelivered:null, readback:asynchronous?'webgl2_async':'webgl1_sync',
     renderer:gl.getParameter(debug?debug.UNMASKED_RENDERER_WEBGL:gl.RENDERER)};
   const rate = (times, now) => {
     times.push(now);
@@ -37,12 +39,20 @@ export function createSensorPreview(renderer, scene, camera, tofCamera, rgbCanva
     Promise.resolve(renderer.readRenderTargetPixels(target,0,0,w,h,bytes));
   return {
     stats,
+    // Forget every image and range from before this call, including a capture in flight;
+    // the next capture renders both sensors.
+    reset() {
+      epoch++; stats.resets = epoch;
+      lastCamera = -Infinity; lastTof = -Infinity;
+      ranges = []; valid = []; rgba = undefined;
+    },
     async capture(now, force = false) {
       if (pending) return undefined;
       const cameraDue = force || now - lastCamera >= cameraPeriod;
       const tofDue = force || now - lastTof >= tofPeriod;
       if (!cameraDue && !tofDue) return undefined;
       pending = true;
+      const started = epoch;
       const oldTarget = renderer.getRenderTarget(), oldOverride = scene.overrideMaterial, oldBackground = scene.background;
       const reads = [];
       try {
@@ -67,6 +77,7 @@ export function createSensorPreview(renderer, scene, camera, tofCamera, rgbCanva
       }
       try {
         await Promise.all(reads);
+        if (started !== epoch) return undefined;
         const completed = performance.now();
         if (cameraDue) {
           const image = rgbContext.createImageData(width, height);
@@ -88,6 +99,8 @@ export function createSensorPreview(renderer, scene, camera, tofCamera, rgbCanva
           }
           stats.tofFrames++; stats.tofHz = rate(tofTimes,completed);
         }
+        stats.lastDelivered = {epoch, camera_updated: cameraDue, tof_updated: tofDue, wall_timestamp_ms: now};
+        if (stats.firstDelivered?.epoch !== epoch) stats.firstDelivered = stats.lastDelivered;
         // The RGBA copy belongs to this completed frame; the next capture may
         // reuse the GPU staging arrays without changing a delivered frame.
         return {renderer: 'Three.js', width, height, rgba, range_m:range,

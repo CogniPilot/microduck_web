@@ -8,7 +8,11 @@
     "check": "node scripts/check-site.mjs",
     "test:browser": "node scripts/browser-smoke.mjs",
     "serve": "node scripts/serve.mjs",
-    "build:prebuilt": "node scripts/export-prebuilt.mjs"
+    "build:prebuilt": "node scripts/export-prebuilt.mjs",
+    "build:fmu": "node scripts/build-fmu.mjs",
+    "test:fmu": "node --experimental-test-module-mocks --test scripts/sha256.test.mjs scripts/build-fmu.test.mjs scripts/fmu-session.test.mjs scripts/fmu-page-contract.test.mjs scripts/physics-worker-fmu.test.mjs scripts/build-admitted-fmu.test.mjs scripts/fmu-matched-ticks.test.mjs scripts/fmu-matched-ticks-options-receipt.test.mjs scripts/fmu-browser-receipts.test.mjs scripts/fmu-browser-launch.test.mjs scripts/fmu-lifecycle-receipts.test.mjs scripts/fmu-page-recovery-receipts.test.mjs",
+    "build:admitted-fmu": "node scripts/build-admitted-fmu.mjs",
+    "bench:fmu": "node scripts/fmu-matched-ticks.mjs"
   },
   "devDependencies": {
     "playwright": "1.65.0"

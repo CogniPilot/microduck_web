@@ -31,11 +31,15 @@ export function createWalkingControls({button,status,canRun,start,pause,update,s
  document.addEventListener('focusin',event=>{if(editing(event.target))clear();});
  function finish(reason){actionGeneration++;active=false;clear();button.disabled=false;button.textContent='Run pretrained';setRunning(false);if(reason==='fallen')status.textContent='Robot fell. Stop and prepare again to reset.';}
  async function stop(){if(!active)return;const action=actionGeneration;active=false;button.disabled=true;clear();try{await pause();}finally{if(action===actionGeneration)finish();}}
- button.onclick=async()=>{
+ async function begin(){
+  if(active)return;
+  return act(false);
+ }
+ async function act(toggle){
   const action=++actionGeneration;
   button.disabled=true;
   try{
-   if(active){await stop();return;}
+   if(active){if(toggle)await stop();return;}
    await ensureReady();
    if(action!==actionGeneration)return;
    if(!canRun())return;
@@ -43,7 +47,8 @@ export function createWalkingControls({button,status,canRun,start,pause,update,s
    await start(command());
   }catch(error){if(action===actionGeneration){finish();onError(error);}}
   finally{if(action===actionGeneration)button.disabled=false;}
- };
+ }
+ button.onclick=()=>act(true);
  report();
- return {stop,finish,isRunning:()=>active,command};
+ return {begin,stop,finish,isRunning:()=>active,command};
 }

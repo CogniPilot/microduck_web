@@ -33,3 +33,6 @@ button,select{background:#20303a;color:#e1e9ed;border-color:#3a4c56}button:hover
 
 .touch-drive{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:10px 16px;background:#18252d}.touch-drive button{touch-action:none;user-select:none;-webkit-user-select:none;min-height:48px;padding:8px 4px;font-size:12px}.touch-drive small{grid-column:1/-1;color:#b6c9bd;font-size:11px}@media(max-width:650px){.touch-drive{grid-template-columns:repeat(2,minmax(0,1fr))}.touch-drive button[data-drive="zero"]{grid-column:1/-1}}
 @media(max-width:650px){.actions{min-width:0}.actions select{min-width:0;max-width:100%;width:100%}.source-panel,.source-workspace,.editor-pane{min-width:0}}
+.simulation-warning{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:20;max-width:min(720px,calc(100vw - 32px));margin:0;padding:10px 14px;border-radius:8px;background:#5a3b05;border:1px solid #f0a020;color:#ffe2a8;font:13px/1.45 system-ui,sans-serif}.simulation-warning[hidden]{display:none}.preview-label{position:fixed;right:16px;bottom:16px;z-index:12;padding:6px 10px;border-radius:6px;background:#08080ccc;color:#fff;font:12px/1.4 ui-monospace,monospace;pointer-events:none}
+
+#load-progress{flex:1 1 160px;min-width:120px;height:8px;accent-color:#7d9c60}

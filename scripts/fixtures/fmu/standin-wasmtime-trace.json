@@ -1,0 +1,70 @@
+{
+ "provenance": {
+  "host": "wasmtime-py 45.0.0",
+  "component": "standin.wasm",
+  "component_sha256": "055c1b22bf8c9e03264f71c8ed97a5bbd1e49de85d3a370452f766cacc45921e",
+  "calls": "instantiate-co-simulation(\"rumoca-test\", token, \"\", false x4, []); enter-initialization-mode(none, 0, some(0.5)); exit-initialization-mode; do-step(current, 0.1, false) x5 carrying last-successful-time; get-float64([vr]) per value reference per row",
+  "token": "standin-decay-0001",
+  "value_references": [
+   2,
+   4,
+   0
+  ],
+  "names": [
+   "x",
+   "xs[1]",
+   "time"
+  ],
+  "note": "get-float64([4]) returns all 8 elements of xs; the reference keeps the first (xs[1])."
+ },
+ "rows": [
+  {
+   "time": 0.0,
+   "bits": [
+    "3ff0000000000000",
+    "3ff0000000000000",
+    "0000000000000000"
+   ]
+  },
+  {
+   "time": 0.1,
+   "bits": [
+    "3fecf46d99d52b41",
+    "3fecf46d99d52b41",
+    "3fb999999999999a"
+   ]
+  },
+  {
+   "time": 0.2,
+   "bits": [
+    "3fea330ad616616d",
+    "3fea330ad616616d",
+    "3fc999999999999a"
+   ]
+  },
+  {
+   "time": 0.30000000000000004,
+   "bits": [
+    "3fe7b4c869c37c1d",
+    "3fe7b4c869c37c1d",
+    "3fd3333333333334"
+   ]
+  },
+  {
+   "time": 0.4,
+   "bits": [
+    "3fe573430672710b",
+    "3fe573430672710b",
+    "3fd999999999999a"
+   ]
+  },
+  {
+   "time": 0.5,
+   "bits": [
+    "3fe368b2fc6f9628",
+    "3fe368b2fc6f9628",
+    "3fe0000000000000"
+   ]
+  }
+ ]
+}
