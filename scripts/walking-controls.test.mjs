@@ -62,3 +62,6 @@ test('late pause rejection cannot finish a replacement walking action',async t=>
  const old=f.button.onclick();f.controls.finish();await f.button.onclick();reject(Error('old pause'));await old;
  assert.equal(f.controls.isRunning(),true);assert.equal(f.started.length,2);assert.equal(f.errors.length,0);
 });
+
+
+test('automatic begin uses normal controls and never toggles an active walk off',async t=>{const f=fixture(t);await f.controls.begin();await f.controls.begin();assert.equal(f.started.length,1);assert.equal(f.controls.isRunning(),true);assert.equal(f.button.textContent,'Pause walking');await f.button.onclick();assert.equal(f.controls.isRunning(),false);});

@@ -7,6 +7,10 @@ retained in LICENSE. This port modifies the arena integration, geometry
 loader and title/loading interface to display Modelica physics compiled
 by Rumoca. It is a CogniPilot application.
 
+landing.js adapts the title-menu duck of app/src/ui/MenuDuck.jsx (sitting
+stage, pointer aim, idle glances, quack envelope) and the jaw hinge and
+SITTING_POSE of app/src/game/duck.js, same revision.
+
 Robot geometry is derived from Pollen's Microduck robot assets. The
 existing robot mesh attribution and CC BY-NC-SA 4.0 terms remain at
 ../third_party/microduck_rl/LICENSE-MODELS.md. The GLB is an alternate

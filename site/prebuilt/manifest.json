@@ -3,29 +3,33 @@
   "models": {
     "MicroduckJawLocked": {
       "format": "precompiled-runtime",
-      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"ec9bc1dd0afa\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7bfb382181497c7534e086d41d6d0963c79a1caa9934049f77bbf97d07a54f9d\",\"sources_sha256\":\"739b40ace92c1361940cfdde2507700a6505dba0417e479426f21fb47d637e20\"}",
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"ec9bc1dd0afa\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7065978b58887b99f1552d381f2a66f5eb251782876967f4278c4a6c2a0b1fa7\",\"sources_sha256\":\"f7e306612f9740c97b52229031d62c28b26f5fe8897add7c60ebe80e50b7916c\"}",
       "artifact": "MicroduckJawLocked.json.gz",
-      "bytes": 707882,
-      "uncompressed_bytes": 13246295,
-      "sha256": "f61637afba5090f921426f17e9d6ddcbb2dca193c83fa0e6f8fdd6b6c786587d",
-      "uncompressed_sha256": "ab51e5503b71305556c6a4c8ca38cae0f8b9e7f627fa33bc3187e9cd55742f5b",
+      "bytes": 706140,
+      "uncompressed_bytes": 13224541,
+      "sha256": "42d2f86fdbb27247a53c1b22a7508f42068d5c81f10ced789ff02f26b48f88db",
+      "uncompressed_sha256": "860ba1d41aa9ef29be295854895656737e4d1b169d757e6fef17e0360f327526",
       "runtime": {
-        "key": "{\"schema\":2,\"model\":{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"ec9bc1dd0afa\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7bfb382181497c7534e086d41d6d0963c79a1caa9934049f77bbf97d07a54f9d\",\"sources_sha256\":\"739b40ace92c1361940cfdde2507700a6505dba0417e479426f21fb47d637e20\"},\"options_sha256\":\"15fd1b2e102e821043e9939501353ad30ef1d7b7bbc85cfc5a6dcbf366488cca\"}",
+        "key": "{\"schema\":2,\"model\":{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"ec9bc1dd0afa\",\"model_name\":\"MicroduckJawLocked\",\"source_sha256\":\"7065978b58887b99f1552d381f2a66f5eb251782876967f4278c4a6c2a0b1fa7\",\"sources_sha256\":\"f7e306612f9740c97b52229031d62c28b26f5fe8897add7c60ebe80e50b7916c\"},\"options_sha256\":\"15fd1b2e102e821043e9939501353ad30ef1d7b7bbc85cfc5a6dcbf366488cca\"}",
         "artifact": "MicroduckJawLocked.runtime.bin.gz",
-        "bytes": 5968945,
-        "uncompressed_bytes": 63094426,
-        "sha256": "3b8bd052eb3034e62776080b45e0fdd71dbac2060a42693ce154987748205093",
-        "uncompressed_sha256": "0a0da73b7e2560a7c978ddc9cbbe52af5c5ed0e20e66a9254701ac68495cc0e4"
+        "bytes": 6050559,
+        "uncompressed_bytes": 63094424,
+        "sha256": "3c6c652174caa3732a3f894e5adf6bac826b037ba6afb937162741a540f1527a",
+        "uncompressed_sha256": "33082ed50d4641a732aa0a1121e3fa7b44b1544563ea042ebc4a5acd36adf55b"
+      },
+      "fmu": {
+        "index": "fmu/MicroduckWholeSystem.fmu.27e029a29a72ecff.json",
+        "sha256": "27e029a29a72ecff431881ba4547c66b6f814165271e9f19094ef50aa50de5d0"
       }
     },
     "MicroduckPolicyInterface": {
       "format": "prebuilt-dae",
-      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"ec9bc1dd0afa\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"c6d6e19b430b858190fd7f97cfaa3fdd032177a7774b5633b3bb1a2d0beecbf5\",\"sources_sha256\":\"52559d4e75b1db733cf2dcb8f93bfc8758dc5335ea72b02ffaea3338961f6082\"}",
+      "key": "{\"version\":1,\"compiler_version\":\"0.10.4\",\"compiler_identity\":\"ec9bc1dd0afa\",\"model_name\":\"MicroduckPolicyInterface\",\"source_sha256\":\"40d2e60f40f007f46507429b24559f05f6f2d1de1096526cf333f536a4a99fdc\",\"sources_sha256\":\"61bc645d422fa718906bcc44d4b24c0b06219ac738cb82201f6f51592fbdb1ff\"}",
       "artifact": "MicroduckPolicyInterface.json.gz",
-      "bytes": 269982,
-      "uncompressed_bytes": 1648512,
-      "sha256": "a7f6ad812fed9060f10af5daf6de3cef5d0034657b7614bd72612a197290632d",
-      "uncompressed_sha256": "1c176775602a34b7b22a84d251607d562bca115a53640f14236644ddce6dbeee"
+      "bytes": 268759,
+      "uncompressed_bytes": 1626922,
+      "sha256": "e96fdc7cd766c82e1d1a6797f2da4ed2e8197b113340741daec2907260ee096e",
+      "uncompressed_sha256": "187cbfcb657cc9357fe86118b29f5ed02067ccc5e883d6485df1afb25477d80f"
     }
   }
 }

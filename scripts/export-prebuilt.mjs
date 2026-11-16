@@ -6,6 +6,9 @@ const site=new URL('../site/',import.meta.url),output=new URL('prebuilt/',site);
 await init({module_or_path:fs.readFileSync(compiler.WASM_URL)});
 const sources=JSON.parse(fs.readFileSync(new URL('msl-sources.json',site)));
 for(const name of JSON.parse(fs.readFileSync(new URL('sources/manifest.json',site))))sources[name]=fs.readFileSync(new URL('sources/'+name,site),'utf8');
+// A model's FMU entry is written by build-fmu.mjs from its own build; this export rewrites
+// only the prebuilt records and keeps that entry, so a CI rebuild still publishes the FMU.
+const previous=(()=>{try{return JSON.parse(fs.readFileSync(new URL('manifest.json',output)));}catch{return undefined;}})();
 const manifest={version:1,models:{}};fs.mkdirSync(output,{recursive:true});
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 for(const model of ['MicroduckJawLocked','MicroduckPolicyInterface']){
@@ -24,6 +27,7 @@ for(const model of ['MicroduckJawLocked','MicroduckPolicyInterface']){
   record.format='precompiled-runtime';
   record.runtime={key:runtimeKey,artifact:runtimeName,bytes:runtimeCompressed.length,uncompressed_bytes:runtimeBytes.length,sha256:sha(runtimeCompressed),uncompressed_sha256:sha(runtimeBytes)};
  }
+ if(previous?.models?.[model]?.fmu)record.fmu=previous.models[model].fmu;
  manifest.models[model]=record;
  console.log(JSON.stringify({model,export_ms:performance.now()-start,bytes:bytes.length,gzip_bytes:compressed.length}));
 }
