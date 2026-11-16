@@ -434,7 +434,7 @@ function sourceStep(step) {
 }
 const sourceFiles = await loadManifest().catch(error => { settleSources?.reject(error); throw error; });
 const originals = new Map();
-const drafts = sourceStep(() => modelDrafts({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)}));
+const drafts = sourceStep(() => modelDrafts({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)},{readOnly:EDITING_DISABLED}));
 const previousDrafts = sourceStep(() => drafts.previous(sourceFiles));
 sourceStep(() => {
   if (!Object.keys(previousDrafts).length) return;
