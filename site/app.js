@@ -11,6 +11,7 @@ import { createSensorPreview } from './sensor-preview.js';
 import { sensorInputs } from './sensor-inputs.js';
 import { createWalkingControls } from './walking-controls.js';
 import {modelDrafts} from './model-drafts.js';
+import {fetchWithRetry} from './fetch-retry.js';
 
 const $ = id => document.getElementById(id);
 // `?fmu=require` (FMU qualification): the worker refuses instead of falling back to the SDK.
@@ -421,7 +422,7 @@ initializeView().catch(error => {
 // Source initialization settles the readiness promise however it ends: a failed or
 // malformed manifest, or any step before the source loader starts, rejects it.
 async function loadManifest() {
-  const response = await fetch('./sources/manifest.json');
+  const response = await fetchWithRetry('./sources/manifest.json');
   if (!response.ok) throw new Error('Source manifest unavailable (HTTP ' + response.status + ').');
   const files = await response.json();
   if (!Array.isArray(files) || !files.length || !files.every(name => typeof name === 'string' && name))
@@ -456,7 +457,7 @@ function savedDraft(name) {
 }
 async function loadSource(name) {
   if (!originals.has(name)) {
-    const response = await fetch('./sources/' + encodeURIComponent(name));
+    const response = await fetchWithRetry('./sources/' + encodeURIComponent(name));
     if (!response.ok) throw new Error('Could not load ' + name);
     originals.set(name, await response.text());
   }
@@ -507,7 +508,7 @@ sourceStep(fileTree);
 // 3D view) handles their completions together instead of one small batch per frame.
 settleSources?.resolve((async () => {
   await Promise.all(sourceFiles.map(async name => {
-    const response = await fetch('./sources/' + name.split('/').map(encodeURIComponent).join('/'));
+    const response = await fetchWithRetry('./sources/' + name.split('/').map(encodeURIComponent).join('/'));
     if (!response.ok) throw new Error('Could not load companion source ' + name);
     originals.set(name, await response.text());
   }));
