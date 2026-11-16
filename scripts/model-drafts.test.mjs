@@ -33,6 +33,20 @@ test('new edits and Restore affect only the current version', () => {
   assert.equal(store.data.get(oldKey), 'older source');
 });
 
+test('a build without editing never uses, overwrites or removes a saved draft, and offers it for download', () => {
+  // The deployed page refused its FMU on a phone holding a draft saved by the earlier editable site.
+  const store = storage([[draftPrefix + name, 'draft from the editable site'], [oldKey, 'older source'], ['unrelated', 'untouched']]);
+  const drafts = modelDrafts(store, {readOnly: true});
+  assert.equal(drafts.get(name), null);
+  drafts.set(name, 'shipped source echoed by the editor');
+  drafts.remove(name);
+  assert.equal(store.data.get(draftPrefix + name), 'draft from the editable site');
+  assert.deepEqual(drafts.previous([name]), {[name]: 'draft from the editable site'});
+  assert.deepEqual(modelDrafts(storage([[oldKey, 'older source']]), {readOnly: true}).previous([name]), {[name]: 'older source'});
+  assert.equal(store.data.get(oldKey), 'older source');
+  assert.equal(store.data.get('unrelated'), 'untouched');
+});
+
 test('blocked storage uses defaults and reports a failed save to the existing caller', () => {
   const refused = () => { throw Error('storage unavailable'); };
   const drafts = modelDrafts({getItem: refused, setItem: refused, removeItem: refused});
