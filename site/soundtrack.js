@@ -2,11 +2,14 @@
 // Browsers start sound only from a click, so it begins on Waddle in. The button turns it
 // off and on, the choice is remembered in this browser, and a hidden tab is silent.
 export const MUSIC_KEY = 'microduck-music';
+// Background level: present but quieter than the page's own sounds and speech.
+export const MUSIC_VOLUME = 0.4;
 
 export function createSoundtrack({audio, button, storage, document: doc = globalThis.document}) {
   const read = () => { try { return storage.getItem(MUSIC_KEY); } catch { return null; } };
   const write = value => { try { storage.setItem(MUSIC_KEY, value); } catch {} };
   let enabled = read() !== 'off', entered = false;
+  audio.volume = MUSIC_VOLUME;
   const show = () => {
     button.textContent = enabled ? 'Music on' : 'Music off';
     button.setAttribute('aria-pressed', String(enabled));

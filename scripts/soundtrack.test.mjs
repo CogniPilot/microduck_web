@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync, statSync} from 'node:fs';
-import {createSoundtrack, MUSIC_KEY} from '../site/soundtrack.js';
+import {createSoundtrack, MUSIC_KEY, MUSIC_VOLUME} from '../site/soundtrack.js';
 
 function fixture({stored = null, refuse = false} = {}) {
   const log = [], listeners = {}, docListeners = {};
   const audio = {
+    volume: 1,
     play() { log.push('play'); return refuse ? Promise.reject(Error('NotAllowedError')) : Promise.resolve(); },
     pause() { log.push('pause'); }
   };
@@ -20,11 +21,13 @@ function fixture({stored = null, refuse = false} = {}) {
   const doc = {hidden: false, addEventListener(type, handler) { docListeners[type] = handler; }};
   const soundtrack = createSoundtrack({audio, button, storage, document: doc});
   const setHidden = hidden => { doc.hidden = hidden; docListeners.visibilitychange(); };
-  return {log, button, data, soundtrack, setHidden};
+  return {log, audio, button, data, soundtrack, setHidden};
 }
 
-test('music is on by default and starts only with Waddle in', () => {
+test('music is on by default at a modest volume and starts only with Waddle in', () => {
   const f = fixture();
+  assert.equal(f.audio.volume, MUSIC_VOLUME);
+  assert.ok(MUSIC_VOLUME > 0 && MUSIC_VOLUME < 1);
   assert.equal(f.button.textContent, 'Music on');
   assert.equal(f.button.attributes['aria-pressed'], 'true');
   assert.deepEqual(f.log, []);
