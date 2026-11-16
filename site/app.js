@@ -12,6 +12,7 @@ import { sensorInputs } from './sensor-inputs.js';
 import { createWalkingControls } from './walking-controls.js';
 import {modelDrafts} from './model-drafts.js';
 import {fetchWithRetry} from './fetch-retry.js';
+import {createSoundtrack} from './soundtrack.js';
 
 const $ = id => document.getElementById(id);
 // `?fmu=require` (FMU qualification): the worker refuses instead of falling back to the SDK.
@@ -600,7 +601,8 @@ async function initializeView() {
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1;
-  const arena=createPollenScene(scene,renderer),shell=createSceneShell(document,{onEnter:()=>enterSimulation().catch(prepareFailed)});
+  const soundtrack=createSoundtrack({audio:$('soundtrack'),button:$('music-toggle'),storage:{getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)}});
+  const arena=createPollenScene(scene,renderer),shell=createSceneShell(document,{onEnter:()=>{soundtrack.start();enterSimulation().catch(prepareFailed);}});
   container.append(renderer.domElement);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.target.set(0,0.13,0);controls.enableDamping=true;
