@@ -32,14 +32,14 @@ export function createTrainer({ars, rollout}) {
         catch (error) { ars.discard(); throw error; }
         if (stopped) { ars.discard(); break; }
         const returns = proposal.candidates.map((c, k) => ({plus: results[2 * k].value, minus: results[2 * k + 1].value}));
-        let spread;
-        try { ({spread} = ars.update(proposal, returns)); }
+        let spread, updated;
+        try { ({spread, updated} = ars.update(proposal, returns)); }
         catch (error) { ars.discard(); throw error; }
         // The episodes' observation statistics join only after an accepted update, in candidate order.
         for (const r of results) ars.stats.merge({count: r.stats.count, mean: r.stats.mean, m2: r.stats.m2});
         const evaluation = await evaluate();
         const entry = {iteration: ars.iteration(), evaluation: evaluation.value, progress: evaluation.progress,
-          fell: evaluation.fell, best: Math.max(...returns.flatMap(r => [r.plus, r.minus])), spread};
+          fell: evaluation.fell, best: Math.max(...returns.flatMap(r => [r.plus, r.minus])), spread, updated};
         history.push(entry);
         onIteration({...entry});
       }

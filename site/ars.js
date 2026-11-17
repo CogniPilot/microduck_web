@@ -1,5 +1,6 @@
-// Augmented Random Search, V2-t (Mania, Guy & Recht 2018): trains a linear policy term from
-// episode returns alone. Here it learns the residual W (actions x observations) added to the
+// Augmented Random Search, V2-t (Mania, Guy & Recht 2018), with the observation normalization
+// variant declared below: trains a linear policy term from episode returns alone. Here it
+// learns the residual W (actions x observations) added to the
 // pretrained policy's action, on observations normalized by running statistics; W = 0 is the
 // pretrained policy unchanged. Each iteration evaluates W +/- noise*delta_k for `directions`
 // Gaussian deltas, keeps the `top` directions by their better return, and steps along
@@ -57,10 +58,12 @@ export function createStats(size) {
   };
 }
 
-// Observation normalization of ARS V2: x -> (x - mean) * scale with scale = 1 / std. As in the
-// paper's implementation, a near-constant coordinate (std < 1e-8), or any coordinate before two
-// samples exist, is masked with scale 0: it contributes nothing, so constant or empty statistics
-// stay finite and W = 0 still reproduces the pretrained action exactly.
+// Observation normalization, an ARS-inspired variant (not the paper's exact rule, which
+// thresholds the variance and starts from the identity): x -> (x - mean) * scale with
+// scale = 1 / std, and a coordinate with std < 1e-8, or any coordinate before two samples
+// exist, is masked with scale 0. It contributes nothing, so constant or empty statistics stay
+// finite and W = 0 still reproduces the pretrained action exactly; the first iteration, with
+// no statistics yet, cannot move W.
 export const MASK_STD = 1e-8;
 export function normalizer({count, mean, m2}) {
   const scale = Float64Array.from(m2, value => {

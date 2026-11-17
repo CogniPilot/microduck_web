@@ -62,7 +62,7 @@ async function train() {
     let last = performance.now();
     await trainer.run(iterations, entry => {
       const now = performance.now();
-      log(`iteration ${entry.iteration}: evaluation ${entry.evaluation.toFixed(4)} (progress ${entry.progress.toFixed(4)} m, ${entry.fell === null ? 'no fall' : 'fell'}) · best candidate ${entry.best.toFixed(4)} · spread ${entry.spread.toFixed(4)} · ${((now - last) / 1000).toFixed(1)} s`);
+      log(`iteration ${entry.iteration}: evaluation ${entry.evaluation.toFixed(4)} (progress ${entry.progress.toFixed(4)} m, ${entry.fell === null ? 'no fall' : 'fell'}) · best candidate ${entry.best.toFixed(4)} · spread ${entry.spread.toFixed(4)}${entry.updated ? '' : ' (no update)'} · ${((now - last) / 1000).toFixed(1)} s`);
       last = now;
       globalThis.microduckTraining.history.push(entry);
     });

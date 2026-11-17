@@ -6,7 +6,7 @@
 <body>
 <main class="training">
 <h1>Train Microduck in the browser</h1>
-<p>Augmented Random Search learns a linear correction (14 × 61 weights) added to the pretrained walking policy. Every
+<p>Augmented Random Search (V2-t, with an ARS-inspired observation normalization) learns a linear correction (14 × 61 weights) added to the pretrained walking policy. Every
 episode is a real run of the whole-system FMU, from reset, for 3 s at 0.3 m/s forward command. The return is the
 trunk's forward progress, minus a small cost on the correction and a penalty for falling. Training happens in
 separate workers; the walking demo is unaffected.</p>

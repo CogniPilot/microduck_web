@@ -36,11 +36,17 @@ export async function runEpisode({reset, step, task, residualPolicy = null, obse
     const target = Math.round((t + 1) * TICK_S * 1e9) / 1e9;
     const result = await step({time: target, twist: task.twist, residual: residualPolicy});
     frame = result.frame;
-    if (Math.abs(frame.time - target) > 1e-9) throw Error('A training tick returned an unexpected simulation time.');
-    stats.add(result.observation);
+    // A malformed frame rejects the episode; it never becomes a training reward.
+    if (!Number.isFinite(frame?.time) || Math.abs(frame.time - target) > 1e-9) throw Error('A training tick returned an unexpected simulation time.');
+    const fallen = frame.outputs?.fallen;
+    if (!(typeof fallen === 'boolean' || fallen === 0 || fallen === 1)) throw Error('A training tick did not report whether the robot fell.');
+    const observation = result.observation;
+    if (observation?.length !== observations || !Array.from(observation).every(Number.isFinite)) throw Error('A training tick returned an invalid observation.');
+    if (result.residual && (result.residual.length !== 14 || !Array.from(result.residual).every(Number.isFinite))) throw Error('A training tick returned an invalid residual.');
+    stats.add(observation);
     if (result.residual) for (const r of result.residual) cost += r * r;
     taken = t + 1;
-    if (frame.outputs?.fallen) { fell = t; break; }
+    if (fallen === true || fallen === 1) { fell = t; break; }
   }
   const progress = trunkX(frame) - x0;
   const value = progress - task.residualCost * cost / taken - (fell === null ? 0 : task.fallPenalty);

@@ -13,7 +13,7 @@ function plant({fallAt = Infinity} = {}) {
     reset: async () => { x = 0; time = 0; return frame(); },
     step: async ({time: target, twist, residual}) => {
       calls.push({target, twist, residual});
-      const applied = residual ? [0.5, -0.25] : [0, 0];
+      const applied = residual ? Array.from({length: 14}, (_, i) => [0.5, -0.25][i] ?? 0) : new Array(14).fill(0);
       x += 0.3 * TICK_S + applied[0] * TICK_S;
       time = target;
       return {frame: frame(), observation: [x, time], residual: residual ? applied : null};
@@ -68,4 +68,26 @@ test('a zero residual leaves the pretrained action bit for bit, including negati
   const moved = appliedAction(raw, Float64Array.of(0.5, 0, 0.125));
   assert.deepEqual(Array.from(moved), [0.5, 0.25, -1.375]);
   assert.ok(moved instanceof Float32Array);
+});
+
+test('a malformed frame rejects the episode instead of becoming a reward', async () => {
+  const malformed = [
+    ['time NaN', r => { r.frame.time = NaN; }, /unexpected simulation time/],
+    ['fallen missing', r => { delete r.frame.outputs.fallen; }, /whether the robot fell/],
+    ['fallen null', r => { r.frame.outputs.fallen = null; }, /whether the robot fell/],
+    ['fallen 2', r => { r.frame.outputs.fallen = 2; }, /whether the robot fell/],
+    ['observation NaN', r => { r.observation = [NaN, r.observation[1]]; }, /invalid observation/],
+    ['observation short', r => { r.observation = [r.observation[0]]; }, /invalid observation/],
+    ['residual Infinity', r => { if (r.residual) r.residual[3] = Infinity; }, /invalid residual/],
+    ['trunk position NaN', r => { r.frame.bodies[0].position[0] = NaN; }, /trunk position/]
+  ];
+  for (const [label, corrupt, pattern] of malformed) {
+    const p = plant();
+    const bad = async args => { const r = await p.step(args); if (args.time > 0.5) corrupt(r); return r; };
+    await assert.rejects(runEpisode({reset: p.reset, step: bad, task: {...task, seconds: 1}, residualPolicy: {weights: [1]}, observations: 2}), pattern, label);
+  }
+  const numeric = plant({fallAt: 0.05});
+  const asNumber = async args => { const r = await numeric.step(args); r.frame.outputs.fallen = r.frame.outputs.fallen ? 1 : 0; return r; };
+  const out = await runEpisode({reset: numeric.reset, step: asNumber, task, observations: 2});
+  assert.ok(out.fell !== null, 'numeric 0/1 fallen is accepted');
 });
