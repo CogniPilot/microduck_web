@@ -1,9 +1,10 @@
 import {normalizer} from './ars.js';
 
 // The training loop around an ARS learner: each iteration evaluates every candidate W in
-// parallel through `rollout(policy) -> {value, stats}`, merges the episodes' observation
-// statistics, updates W, then evaluates the updated mean policy once with the normalization a
-// saved policy carries (the statistics after this iteration's merge). Results depend only on
+// parallel through `rollout(policy) -> {value, stats}`, updates W, merges the episodes'
+// observation statistics only after that update is accepted, then evaluates the updated mean
+// policy once with the normalization a saved policy carries. An iteration is atomic: a refused
+// rollout or update, or Stop, leaves W and the statistics as they were. Results depend only on
 // the candidates, never on which rollout finished first.
 export function residualPolicy(weights, scale) {
   return {weights: Array.from(weights), mean: Array.from(scale.mean), scale: Array.from(scale.scale)};
@@ -25,12 +26,17 @@ export function createTrainer({ars, rollout}) {
       stopped = false;
       for (let i = 0; i < iterations && !stopped; i++) {
         const proposal = ars.propose();
-        const jobs = proposal.candidates.flatMap(c => [c.plus, c.minus].map(w => rollout(residualPolicy(w, proposal.scale))));
-        const results = await Promise.all(jobs);
-        if (stopped) break;
-        for (const r of results) ars.stats.merge({count: r.stats.count, mean: r.stats.mean, m2: r.stats.m2});
+        let results;
+        // A refused rollout or Stop abandons this iteration whole: W and the statistics stay.
+        try { results = await Promise.all(proposal.candidates.flatMap(c => [c.plus, c.minus].map(w => rollout(residualPolicy(w, proposal.scale))))); }
+        catch (error) { ars.discard(); throw error; }
+        if (stopped) { ars.discard(); break; }
         const returns = proposal.candidates.map((c, k) => ({plus: results[2 * k].value, minus: results[2 * k + 1].value}));
-        const {spread} = ars.update(proposal, returns);
+        let spread;
+        try { ({spread} = ars.update(proposal, returns)); }
+        catch (error) { ars.discard(); throw error; }
+        // The episodes' observation statistics join only after an accepted update, in candidate order.
+        for (const r of results) ars.stats.merge({count: r.stats.count, mean: r.stats.mean, m2: r.stats.m2});
         const evaluation = await evaluate();
         const entry = {iteration: ars.iteration(), evaluation: evaluation.value, progress: evaluation.progress,
           fell: evaluation.fell, best: Math.max(...returns.flatMap(r => [r.plus, r.minus])), spread};

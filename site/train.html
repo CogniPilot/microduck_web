@@ -14,7 +14,8 @@ separate workers; the walking demo is unaffected.</p>
 <label>Workers <input id="train-workers" type="number" min="1" max="8" value="1"></label></p>
 <p><button id="train-start">Train</button> <button id="train-stop" disabled>Stop</button>
 <button id="train-evaluate">Evaluate</button> <button id="train-save">Save policy</button>
-<label>Load policy <input id="train-load" type="file" accept="application/json"></label></p>
+<button id="train-restore">Restore saved policy</button></p>
+<p class="muted">Stop takes effect when the running iteration's episodes finish; that iteration is dropped.</p>
 <p id="train-status" role="status">Ready.</p>
 <pre id="train-log" aria-live="polite"></pre>
 <p><a href="./">Back to the simulator</a></p>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRandom, createStats, normalizer, residual, createArs, loadArs, MASK_STD} from '../site/ars.js';
+import {createRandom, createStats, normalizer, residual, createArs, loadArs, MASK_STD, MIN_SPREAD} from '../site/ars.js';
 
 test('the random stream is reproducible from its seed and from a snapshot', () => {
   const a = createRandom(7), b = createRandom(7);
@@ -46,8 +46,9 @@ test('an update steps along the top directions, scaled by their return spread', 
   // Same terms; the implementation accumulates per direction, so compare within rounding.
   Array.from(ars.weights()).forEach((w, i) => assert.ok(Math.abs(w - expected[i]) <= 1e-14 * Math.abs(expected[i]), `weight ${i}: ${w} vs ${expected[i]}`));
   assert.equal(ars.iteration(), 1);
-  assert.throws(() => ars.update(proposal, returns), /stale iteration/);
-  assert.throws(() => createArs({actions: 1, observations: 2, directions: 3, top: 2}).update({...proposal, iteration: 0}, [{plus: NaN, minus: 0}, {plus: 0, minus: 0}, {plus: 0, minus: 0}]), /finite/);
+  assert.throws(() => ars.update(proposal, returns), /stale or foreign proposal/);
+  const fresh = createArs({actions: 1, observations: 2, directions: 3, top: 2});
+  assert.throws(() => fresh.update(fresh.propose(), [{plus: NaN, minus: 0}, {plus: 0, minus: 0}, {plus: 0, minus: 0}]), /finite/);
 });
 
 // A real control problem with a known optimum: a discretized double integrator under a weak
@@ -134,4 +135,59 @@ test('near-constant or unseen coordinates are masked (scale 0), as in ARS V2', (
   assert.equal(scale.scale[2], 0);
   const out = residual(Float64Array.of(2, 1e9, 1e9), scale, [5, 1e12, -1e12], 1);
   assert.ok(Math.abs(out[0] - 2 * (5 - 3) * scale.scale[0]) < 1e-12, 'masked coordinates contribute nothing, even when huge');
+});
+
+test('the configuration must be integer-sized, finite and positive', () => {
+  const ok = {actions: 1, observations: 2, directions: 4, top: 2, stepSize: 0.1, noise: 0.1, seed: 3};
+  createArs(ok);
+  for (const bad of [{top: 5}, {top: 1.5}, {directions: 0}, {stepSize: 0}, {stepSize: NaN}, {noise: -1}, {seed: 1.5}, {seed: -1}, {actions: 2.5}])
+    assert.throws(() => createArs({...ok, ...bad}), /ARS needs/, JSON.stringify(bad));
+});
+
+test('one own proposal at a time; save only between iterations', () => {
+  const ars = createArs({actions: 1, observations: 2, directions: 2, top: 1, seed: 4});
+  const proposal = ars.propose();
+  assert.throws(() => ars.propose(), /outstanding proposal/);
+  assert.throws(() => ars.save(), /between iterations/);
+  const other = createArs({actions: 1, observations: 2, directions: 2, top: 1, seed: 4});
+  assert.throws(() => ars.update(other.propose(), [{plus: 1, minus: 0}, {plus: 0, minus: 0}]), /stale or foreign/);
+  ars.discard();
+  assert.throws(() => ars.update(proposal, [{plus: 1, minus: 0}, {plus: 0, minus: 0}]), /stale or foreign/, 'a discarded proposal cannot be applied');
+  ars.update(ars.propose(), [{plus: 1, minus: 0}, {plus: 0, minus: 0}]);
+  assert.equal(ars.iteration(), 1);
+  ars.save();
+});
+
+test('equal returns are NOUPDATE; a non-finite spread or step is refused atomically', () => {
+  const ars = createArs({actions: 1, observations: 2, directions: 2, top: 2, seed: 6});
+  const flat = ars.update(ars.propose(), [{plus: 2, minus: 2}, {plus: 2, minus: 2 + MIN_SPREAD / 10}]);
+  assert.equal(flat.updated, false);
+  assert.deepEqual(Array.from(ars.weights()), [0, 0]);
+  assert.equal(ars.iteration(), 1);
+  const before = Array.from(ars.weights()), proposal = ars.propose();
+  assert.throws(() => ars.update(proposal, [{plus: 1e308, minus: -1e308}, {plus: 0, minus: 0}]), /refused/);
+  assert.deepEqual(Array.from(ars.weights()), before);
+  assert.equal(ars.iteration(), 1);
+  assert.throws(() => ars.propose(), /outstanding/, 'the refused proposal stays outstanding until discarded');
+  ars.discard();
+  ars.propose();
+});
+
+test('a saved learner is adopted only with exact shape, finite values and the expected configuration', () => {
+  const config = {actions: 1, observations: 2, directions: 2, top: 1, stepSize: 0.02, noise: 0.03, seed: 2};
+  const ars = createArs(config);
+  ars.stats.add([1, 2]); ars.stats.add([3, 5]);
+  ars.update(ars.propose(), [{plus: 1, minus: 0}, {plus: 0, minus: 0.5}]);
+  const saved = JSON.parse(JSON.stringify(ars.save({task: 'walkForward'})));
+  assert.deepEqual(Array.from(loadArs(saved, config).weights()), Array.from(ars.weights()));
+  const broken = [
+    ['noise differs', s => ({...s, noise: 0.5})],
+    ['weights', s => ({...s, weights: s.weights.slice(1)})],
+    ['weights', s => ({...s, weights: [NaN, 0]})],
+    ['iteration', s => ({...s, iteration: 1.5})],
+    ['statistics', s => ({...s, stats: {...s.stats, m2: [-1, 0]}})],
+    ['statistics count', s => ({...s, stats: {...s.stats, count: -2}})],
+    ['random state', s => ({...s, random: {state: 2 ** 33, spare: null}})]
+  ];
+  for (const [what, mutate] of broken) assert.throws(() => loadArs(mutate(saved), config), new RegExp(what), what);
 });

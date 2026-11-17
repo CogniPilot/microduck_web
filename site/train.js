@@ -8,7 +8,7 @@ import {TASKS} from './rollout.js';
 import {fetchWithRetry} from './fetch-retry.js';
 
 const $ = id => document.getElementById(id);
-const TASK = 'walkForward', SAVE_KEY = 'microduck-training-v1';
+const TASK = 'walkForward', SAVE_KEY = 'microduck-training-v1', MAX_SAVED_BYTES = 200000;
 const config = {actions: 14, observations: 61, directions: 8, top: 4, stepSize: 0.02, noise: 0.03, seed: 1};
 let pool, ars = createArs(config), trainer, baseline = null, running = false;
 
@@ -16,7 +16,7 @@ const log = line => { $('train-log').textContent += line + '\n'; };
 const status = text => { $('train-status').textContent = text; };
 const busy = value => {
   running = value;
-  for (const id of ['train-start', 'train-evaluate', 'train-save', 'train-load']) $(id).disabled = value;
+  for (const id of ['train-start', 'train-evaluate', 'train-save', 'train-restore']) $(id).disabled = value;
   $('train-stop').disabled = !value;
 };
 
@@ -73,6 +73,8 @@ async function train() {
 
 async function evaluate() {
   busy(true);
+  // A failed evaluation leaves no result, never the previous one.
+  globalThis.microduckTraining.lastEvaluation = null;
   try {
     await ensurePool();
     const result = await rollout(current());
@@ -95,26 +97,33 @@ function save() {
   return saved;
 }
 
-function load(saved) {
-  if (saved.task !== TASK) throw Error('This policy was trained for another task.');
-  ars = loadArs(saved);
-  log(`loaded learned policy at iteration ${ars.iteration()}`);
+// Restores only a learner this page saved in this browser, with the page's own fixed
+// configuration; loadArs checks every field before anything is replaced.
+function restoreSaved() {
+  let text = null;
+  try { text = localStorage.getItem(SAVE_KEY); } catch {}
+  if (text === null) throw Error('No policy has been saved in this browser.');
+  if (text.length > MAX_SAVED_BYTES) throw Error('The saved policy is too large.');
+  const saved = JSON.parse(text);
+  if (saved.task !== TASK) throw Error('The saved policy was trained for another task.');
+  const next = loadArs(saved, config);
+  if (next.iteration() !== saved.iteration) throw Error('The saved policy did not restore its iteration.');
+  ars = next;
+  log(`restored learned policy at iteration ${ars.iteration()}`);
 }
 
 $('train-start').onclick = train;
-$('train-stop').onclick = () => { trainer?.stop(); status('Stopping after the current iteration…'); };
+// Stop takes effect when the running iteration's episodes finish; that iteration is dropped.
+$('train-stop').onclick = () => { trainer?.stop(); status('Stopping when the running episodes finish…'); };
 $('train-evaluate').onclick = evaluate;
 $('train-save').onclick = save;
-$('train-load').onchange = async event => {
-  try { load(JSON.parse(await event.target.files[0].text())); } catch (error) { status('Load failed: ' + error.message); }
-};
-try { const stored = localStorage.getItem(SAVE_KEY); if (stored) { load(JSON.parse(stored)); status('Restored the learned policy saved in this browser.'); } } catch {}
+$('train-restore').onclick = () => { try { restoreSaved(); status('Restored.'); } catch (error) { status('Restore failed: ' + error.message); } };
 busy(false);
 
 // For the acceptance harness: the same actions as the buttons, and the raw records.
 globalThis.microduckTraining = {
   history: [], lastEvaluation: null,
   train: async iterations => { $('train-iterations').value = String(iterations); await train(); },
-  evaluate, save, load: saved => load(saved), baseline: () => baseline, iteration: () => ars.iteration(),
+  evaluate, save, restoreSaved, baseline: () => baseline, iteration: () => ars.iteration(),
   weights: () => Array.from(ars.weights()), running: () => running
 };
