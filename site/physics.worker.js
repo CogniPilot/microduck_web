@@ -4,6 +4,8 @@ import * as ort from './vendor/onnxruntime-1.31.1/ort.js';
 import {poseFrame} from './policy-contract.js';
 import {checkControllerInputs} from './model-inputs.js';
 import {createWalkRunner} from './walk-runner.js';
+import {residual as residualAction} from './ars.js';
+import {runEpisode,TASKS} from './rollout.js';
 import {offeredFmu,openFmuSession,checkPageInterface,preloadFmu} from './fmu-session.js';
 import {currentPageSources,pageBinding,wholeModelOptions,LEGACY_MODEL,WHOLE_MODEL,PAGE_FIXED_VALUES} from './fmu-page-contract.js';
 import {createReadout,plantReadoutName,telemetryPattern,observationNames,commandNames} from './session-readout.js';
@@ -16,6 +18,13 @@ const loadSdk=()=>sdk??=Promise.all([import('./model-runtime.js'),import('./preb
  .then(([runtime,prebuilt])=>({init:runtime.default,compiler:runtime,...prebuilt}));
 let plantReadout,observationReadout,commandReadout;
 let previous=new Float32Array(14),previousCommand=new Float64Array(3),previousPosition;
+// The last tick's policy observation and learned residual, read by training rollouts.
+let lastObservation,lastResidual;
+function checkedResidual(policy){
+ if(!Array.isArray(policy?.weights)||policy.weights.length!==14*61||!Array.isArray(policy.mean)||policy.mean.length!==61||!Array.isArray(policy.std)||policy.std.length!==61||
+  ![...policy.weights,...policy.mean,...policy.std].every(Number.isFinite)||!policy.std.every(value=>value>0))throw Error('Invalid trained residual policy.');
+ return policy;
+}
 
 function routed(values,output,input,count){
  return Array.from({length:count},(_,i)=>[input+'['+(i+1)+']',values[output+'['+(i+1)+']']]);
@@ -85,15 +94,27 @@ async function execute(message){
   timing.observation_ms=mark()-phase;phase=mark();
   const result=await policy.run({obs:new ort.Tensor('float32',obs,[1,61])}),raw=result.actions.data;
   if(raw.length!==14||!Array.from(raw).every(Number.isFinite))throw Error('Invalid pretrained policy output.');
+  // Training: a learned residual on the normalized observation is added to the pretrained action,
+  // and the action actually applied is also the policy's next previous-action input.
+  const extra=message.residual?residualAction(checkedResidual(message.residual).weights,message.residual,obs,14):null;
+  const applied=extra?Float32Array.from(raw,(value,i)=>value+extra[i]):raw;
+  if(!Array.from(applied).every(Number.isFinite))throw Error('Invalid trained policy output.');
+  lastObservation=obs;lastResidual=extra;
   timing.policy_ms=mark()-phase;phase=mark();
-  controller.set_inputs(JSON.stringify(Array.from(raw,(value,i)=>['policyAction['+(i+1)+']',value])));
+  controller.set_inputs(JSON.stringify(Array.from(applied,(value,i)=>['policyAction['+(i+1)+']',value])));
   const mapped=commandReadout();
   session.set_inputs(JSON.stringify([...(message.inputs??[]),...(whole?[["usePolicyController",1],["usePolicyPosition",1]]:[['usePolicyPosition',1],...routed(mapped,'positionCommand','policyPosition',15)])]));
   timing.mapping_ms=mark()-phase;phase=mark();
-  session.advance_to(message.time);timing.physics_ms=mark()-phase;phase=mark();previous=new Float32Array(raw);
+  session.advance_to(message.time);timing.physics_ms=mark()-phase;phase=mark();previous=new Float32Array(applied);
   previousCommand=Float64Array.from({length:3},(_,i)=>mapped['filteredCommand['+(i+1)+']']);
   previousPosition=Float64Array.from({length:15},(_,i)=>mapped['positionCommand['+(i+1)+']']);
-  control={policy:'Pollen velstand',twist,clipped:mapped.clippedPolicyActions};
+  control={policy:extra?'Pollen velstand + learned residual':'Pollen velstand',twist,clipped:mapped.clippedPolicyActions};
+ }else if(message.type==='rollout'){
+  // One training episode from reset, unpaced, on this worker's own plant.
+  const task=TASKS[message.task];if(!task)throw Error('Unknown training task.');
+  return runEpisode({task,residualPolicy:message.residual?checkedResidual(message.residual):null,
+   reset:()=>execute({type:'reset'}),
+   step:async({time,twist,residual})=>({frame:await execute({type:'policy_step',time,twist,residual}),observation:lastObservation,residual:lastResidual})});
  }else if(message.type==='step'){
   if(message.inputs)session.set_inputs(JSON.stringify(message.inputs));session.advance_to(message.time);
  }else if(message.type==='reset'){session.reset();if(controller!==session)controller.reset();previous=new Float32Array(14);previousCommand=new Float64Array(3);previousPosition=undefined;}
