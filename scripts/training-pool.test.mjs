@@ -95,6 +95,17 @@ test('a failed preparation closes the pool', async () => {
   await assert.rejects(pool.rollout('walkForward', null), /closed/);
 });
 
+test('Stop during preparation rejects start and terminates the workers being prepared', async () => {
+  let terminated = 0;
+  const pool = createTrainingPool({size: 2, prepare,
+    createWorker: () => ({postMessage() {}, terminate() { terminated++; }})});
+  const starting = pool.start();
+  pool.close();
+  await assert.rejects(starting, /closed: stopped/);
+  assert.equal(terminated, 2);
+  await assert.rejects(pool.rollout('walkForward', null), /closed: stopped/);
+});
+
 test('Stop closes the pool at once, without waiting for the running episode', async () => {
   const f = fakeWorkers({delay: 10000}), pool = createTrainingPool({size: 1, createWorker: f.createWorker, prepare});
   await pool.start();

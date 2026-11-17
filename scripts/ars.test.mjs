@@ -169,6 +169,20 @@ test('saved policies carry the exact learner version and normalization, and meta
   loadArs(saved);
 });
 
+test('restore returns the learner in place to a checkpoint, and refuses a foreign one', () => {
+  const ars = createArs({actions: 1, observations: 2, directions: 2, top: 1});
+  const checkpoint = ars.save();
+  const proposal = ars.propose();
+  ars.update(proposal, [{plus: 1, minus: 0}, {plus: 0, minus: 2}]);
+  assert.notDeepEqual(ars.save(), checkpoint);
+  ars.restore(checkpoint);
+  assert.deepEqual(ars.save(), checkpoint);
+  ars.propose();
+  ars.restore(checkpoint);
+  ars.propose();
+  assert.throws(() => ars.restore(createArs({actions: 1, observations: 2, directions: 2, top: 1, seed: 9}).save()), /seed differs/);
+});
+
 test('saved statistics must be what a real accumulator can hold', () => {
   const saved = createArs({actions: 1, observations: 2, directions: 2, top: 1}).save();
   assert.throws(() => loadArs({...saved, stats: {count: 0, mean: [1, 0], m2: [0, 0]}}), /mean without samples/);

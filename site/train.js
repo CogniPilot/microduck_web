@@ -10,7 +10,7 @@ import {fetchWithRetry} from './fetch-retry.js';
 const $ = id => document.getElementById(id);
 const TASK = 'walkForward', SAVE_KEY = 'microduck-training-v2', MAX_SAVED_BYTES = 200000, WORKERS = 1;
 const config = {actions: 14, observations: 61, directions: 8, top: 4, stepSize: 0.02, noise: 0.03, seed: 1};
-let pool, ars = createArs(config), trainer, baseline = null, running = false, stopping = false;
+let pool, preparing, ars = createArs(config), trainer, baseline = null, running = false, stopping = false;
 
 const log = line => { $('train-log').textContent += line + '\n'; };
 const status = text => { $('train-status').textContent = text; };
@@ -36,11 +36,16 @@ async function ensurePool() {
   if (pool) return;
   status('Preparing the training worker…');
   const started = performance.now(), sources = await pageSources();
+  // Stop may come during any await here: it closes the pool still being prepared, and every
+  // continuation checks for it, so a stopped Train or Evaluate never starts work afterwards.
+  if (stopping) throw Error('Stopped.');
   // One worker: the qualified configuration. A failed preparation closes the pool; the next
   // Train or Evaluate prepares a fresh one.
   const next = createTrainingPool({size: WORKERS, prepare: {type: 'prepare', sources, model: 'MicroduckJawLocked', requireFmu: true},
     createWorker: () => new Worker(new URL('./physics.worker.js', import.meta.url), {type: 'module'})});
-  await next.start();
+  preparing = next;
+  try { await next.start(); } finally { preparing = undefined; }
+  if (stopping) { next.close('stopped'); throw Error('Stopped.'); }
   pool = next;
   log(`worker ready in ${((performance.now() - started) / 1000).toFixed(1)} s`);
 }
@@ -72,7 +77,9 @@ async function train() {
       last = now;
       globalThis.microduckTraining.history.push(entry);
     });
-    status(`Trained to iteration ${ars.iteration()}.`);
+    // Stop during the last evaluation keeps that completed iteration and ends the run normally.
+    if (stopping) { status(`Stopped. The learner keeps iteration ${ars.iteration()}.`); log(`stopped at iteration ${ars.iteration()}`); }
+    else status(`Trained to iteration ${ars.iteration()}.`);
   } catch (error) {
     dropPool('training failed');
     if (stopping) { status(`Stopped. The learner keeps iteration ${ars.iteration()}.`); log(`stopped at iteration ${ars.iteration()}`); }
@@ -125,7 +132,7 @@ function restoreSaved() {
 
 $('train-start').onclick = train;
 // Stop closes the worker at once; the running iteration is dropped.
-$('train-stop').onclick = () => { stopping = true; trainer?.stop(); dropPool('stopped'); status('Stopping…'); };
+$('train-stop').onclick = () => { stopping = true; trainer?.stop(); preparing?.close('stopped'); dropPool('stopped'); status('Stopping…'); };
 $('train-evaluate').onclick = evaluate;
 $('train-save').onclick = save;
 $('train-restore').onclick = () => { try { restoreSaved(); status('Restored.'); } catch (error) { status('Restore failed: ' + error.message); } };

@@ -104,7 +104,7 @@ export function createArs({actions, observations, directions = 8, top = 4, stepS
     throw Error('ARS needs a finite positive step size and noise and a 32-bit integer seed.');
   const size = actions * observations, stats = createStats(observations);
   if (saved) checkSaved(saved, {actions, observations, directions, top, stepSize, noise, seed});
-  const random = createRandom(seed, saved?.random);
+  let random = createRandom(seed, saved?.random);
   let weights = saved ? Float64Array.from(saved.weights) : new Float64Array(size), iteration = saved?.iteration ?? 0;
   if (saved) stats.restore(saved.stats);
   // One proposal at a time: update() accepts only the learner's own outstanding proposal.
@@ -127,6 +127,17 @@ export function createArs({actions, observations, directions = 8, top = 4, stepS
     },
     // Abandons the outstanding proposal (a refused or cancelled iteration); W is unchanged.
     discard() { outstanding = null; },
+    // Returns this learner, in place, to a state save() produced for the same configuration:
+    // W, iteration, statistics and random state together, with no outstanding proposal.
+    restore(checkpoint) {
+      checkSaved(checkpoint, {actions, observations, directions, top, stepSize, noise, seed});
+      if (checkpoint.version !== SAVE_VERSION || checkpoint.normalization !== NORMALIZATION) throw Error('ARS restore needs a checkpoint of this learner version.');
+      weights = Float64Array.from(checkpoint.weights);
+      iteration = checkpoint.iteration;
+      stats.restore(checkpoint.stats);
+      random = createRandom(seed, checkpoint.random);
+      outstanding = null;
+    },
     // returns[k] = {plus, minus} episode returns of candidate k. Observation statistics from
     // those episodes are merged separately through `stats`.
     update(proposal, returns) {

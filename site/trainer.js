@@ -3,9 +3,11 @@ import {normalizer} from './ars.js';
 // The training loop around an ARS learner: each iteration evaluates every candidate W in
 // parallel through `rollout(policy) -> {value, stats}`, updates W, merges the episodes'
 // observation statistics only after that update is accepted, then evaluates the updated mean
-// policy once with the normalization a saved policy carries. An iteration is atomic: a refused
-// rollout or update, or Stop, leaves W and the statistics as they were. Results depend only on
-// the candidates, never on which rollout finished first.
+// policy once with the normalization a saved policy carries. An iteration is atomic: it starts
+// from a full checkpoint of the learner (W, iteration, statistics, random state), and a refused
+// rollout, update or evaluation, or Stop, at any point before the iteration completes restores
+// that checkpoint. A stopped run therefore continues exactly as an uninterrupted one would.
+// Results depend only on the candidates, never on which rollout finished first.
 export function residualPolicy(weights, scale) {
   return {weights: Array.from(weights), mean: Array.from(scale.mean), scale: Array.from(scale.scale)};
 }
@@ -25,21 +27,21 @@ export function createTrainer({ars, rollout}) {
     async run(iterations, onIteration = () => {}) {
       stopped = false;
       for (let i = 0; i < iterations && !stopped; i++) {
-        const proposal = ars.propose();
-        let results;
-        // A refused rollout or Stop abandons this iteration whole: W and the statistics stay.
-        try { results = await Promise.all(proposal.candidates.flatMap(c => [c.plus, c.minus].map(w => rollout(residualPolicy(w, proposal.scale))))); }
-        catch (error) { ars.discard(); throw error; }
-        if (stopped) { ars.discard(); break; }
-        const returns = proposal.candidates.map((c, k) => ({plus: results[2 * k].value, minus: results[2 * k + 1].value}));
-        let spread, updated;
-        try { ({spread, updated} = ars.update(proposal, returns)); }
-        catch (error) { ars.discard(); throw error; }
-        // The episodes' observation statistics join only after an accepted update, in candidate order.
-        for (const r of results) ars.stats.merge({count: r.stats.count, mean: r.stats.mean, m2: r.stats.m2});
-        const evaluation = await evaluate();
-        const entry = {iteration: ars.iteration(), evaluation: evaluation.value, progress: evaluation.progress,
-          fell: evaluation.fell, best: Math.max(...returns.flatMap(r => [r.plus, r.minus])), spread, updated};
+        const checkpoint = ars.save();
+        let entry;
+        try {
+          const proposal = ars.propose();
+          const results = await Promise.all(proposal.candidates.flatMap(c => [c.plus, c.minus].map(w => rollout(residualPolicy(w, proposal.scale)))));
+          if (stopped) { ars.restore(checkpoint); break; }
+          const returns = proposal.candidates.map((c, k) => ({plus: results[2 * k].value, minus: results[2 * k + 1].value}));
+          const {spread, updated} = ars.update(proposal, returns);
+          // The episodes' observation statistics join only after an accepted update, in candidate order.
+          for (const r of results) ars.stats.merge({count: r.stats.count, mean: r.stats.mean, m2: r.stats.m2});
+          // Once this evaluation returns the iteration is complete and kept, even if Stop came during it.
+          const evaluation = await evaluate();
+          entry = {iteration: ars.iteration(), evaluation: evaluation.value, progress: evaluation.progress,
+            fell: evaluation.fell, best: Math.max(...returns.flatMap(r => [r.plus, r.minus])), spread, updated};
+        } catch (error) { ars.restore(checkpoint); throw error; }
         history.push(entry);
         onIteration({...entry});
       }

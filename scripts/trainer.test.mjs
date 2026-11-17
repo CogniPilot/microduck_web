@@ -67,3 +67,38 @@ test('a pool closed mid-iteration (Stop or a failed worker) drops that iteration
   assert.deepEqual(ars.stats.snapshot(), stats);
   ars.propose();
 });
+
+// Iteration k (1-based) makes 2 * directions candidate episodes and then one evaluation.
+const perIteration = 2 * config.directions + 1;
+const refuseCall = n => { const healthy = lqrRollout([0]); let calls = 0;
+  return policy => (++calls === n ? Promise.reject(Error('The training pool is closed: stopped.')) : healthy(policy)); };
+
+test('a refused evaluation after the update restores the whole iteration, W and statistics included', async () => {
+  const ars = createArs(config), trainer = createTrainer({ars, rollout: refuseCall(2 * perIteration + perIteration)});
+  await trainer.run(2);
+  const before = ars.save();
+  await assert.rejects(trainer.run(5), /closed: stopped/);
+  assert.deepEqual(ars.save(), before, 'W, iteration, statistics and random state are those of iteration 2');
+  assert.equal(trainer.history().length, 2, 'the retained iteration equals the last completed history entry');
+});
+
+test('a run stopped mid-iteration and continued equals an uninterrupted run', async () => {
+  const uninterrupted = createArs(config);
+  await createTrainer({ars: uninterrupted, rollout: lqrRollout([0])}).run(5);
+  // Stopped during iteration 3's evaluation, then continued for the remaining 3 iterations.
+  const interrupted = createArs(config), trainer = createTrainer({ars: interrupted, rollout: refuseCall(3 * perIteration)});
+  await assert.rejects(trainer.run(5), /closed/);
+  assert.equal(interrupted.iteration(), 2);
+  await trainer.run(3);
+  assert.deepEqual(interrupted.save(), uninterrupted.save());
+});
+
+test('Stop that lands during the post-update evaluation keeps that completed iteration', async () => {
+  const ars = createArs(config);
+  let trainer, calls = 0;
+  const healthy = lqrRollout([0]);
+  trainer = createTrainer({ars, rollout: policy => { if (++calls === perIteration) trainer.stop(); return healthy(policy); }});
+  const history = await trainer.run(5);
+  assert.equal(history.length, 1);
+  assert.equal(ars.iteration(), 1);
+});
