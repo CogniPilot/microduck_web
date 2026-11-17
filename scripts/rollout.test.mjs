@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {runEpisode, TASKS, TICK_S} from '../site/rollout.js';
+import {runEpisode, TASKS, TICK_S, appliedAction} from '../site/rollout.js';
 
 // A stand-in plant with the worker's step/reset contract: the trunk moves forward by the
 // residual's first component plus a base speed each tick, and falls when x passes `fallAt`.
@@ -57,4 +57,15 @@ test('a reset that does not return time zero or a mistimed tick is refused', asy
   const p = plant();
   const late = async args => { const r = await p.step(args); r.frame.time += 0.001; return r; };
   await assert.rejects(runEpisode({reset: p.reset, step: late, task, observations: 2}), /unexpected simulation time/);
+});
+
+test('a zero residual leaves the pretrained action bit for bit, including negative zero', () => {
+  const raw = Float32Array.of(-0, 0.25, -1.5);
+  assert.equal(appliedAction(raw, null), raw);
+  const same = appliedAction(raw, Float64Array.of(0, -0, 0));
+  assert.ok(Object.is(same[0], -0));
+  assert.deepEqual(Array.from(same), Array.from(raw));
+  const moved = appliedAction(raw, Float64Array.of(0.5, 0, 0.125));
+  assert.deepEqual(Array.from(moved), [0.5, 0.25, -1.375]);
+  assert.ok(moved instanceof Float32Array);
 });

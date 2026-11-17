@@ -5,7 +5,7 @@ import {poseFrame} from './policy-contract.js';
 import {checkControllerInputs} from './model-inputs.js';
 import {createWalkRunner} from './walk-runner.js';
 import {residual as residualAction} from './ars.js';
-import {runEpisode,TASKS} from './rollout.js';
+import {runEpisode,TASKS,appliedAction} from './rollout.js';
 import {offeredFmu,openFmuSession,checkPageInterface,preloadFmu} from './fmu-session.js';
 import {currentPageSources,pageBinding,wholeModelOptions,LEGACY_MODEL,WHOLE_MODEL,PAGE_FIXED_VALUES} from './fmu-page-contract.js';
 import {createReadout,plantReadoutName,telemetryPattern,observationNames,commandNames} from './session-readout.js';
@@ -97,7 +97,7 @@ async function execute(message){
   // Training: a learned residual on the normalized observation is added to the pretrained action,
   // and the action actually applied is also the policy's next previous-action input.
   const extra=message.residual?residualAction(checkedResidual(message.residual).weights,message.residual,obs,14):null;
-  const applied=extra?Float32Array.from(raw,(value,i)=>value+extra[i]):raw;
+  const applied=appliedAction(raw,extra);
   if(!Array.from(applied).every(Number.isFinite))throw Error('Invalid trained policy output.');
   lastObservation=obs;lastResidual=extra;
   timing.policy_ms=mark()-phase;phase=mark();
