@@ -14,9 +14,11 @@ separate workers; the walking demo is unaffected.</p>
 </p>
 <p><button id="train-start">Train</button> <button id="train-stop" disabled>Stop</button>
 <button id="train-evaluate">Evaluate</button> <button id="train-save">Save policy</button>
+<button id="train-save-best" disabled>Save best policy</button>
 <button id="train-restore">Restore saved policy</button></p>
-<p class="muted">Stop ends training at once: the running iteration is dropped and the learner keeps its last completed iteration. Training uses one worker.</p>
+<p class="muted">Stop ends training at once: the running iteration is dropped and the learner keeps its last completed iteration. Training uses one worker. Save best policy saves the completed iteration with the highest evaluated return so far; training still continues from the current iteration, and Restore loads whichever policy was saved last.</p>
 <p id="train-status" role="status">Ready.</p>
+<p id="train-best">Current: iteration 0 · no completed iteration evaluated yet</p>
 <pre id="train-log" aria-live="polite"></pre>
 <p><a href="./">Back to the simulator</a></p>
 </main>

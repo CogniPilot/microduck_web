@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createArs, createStats, residual} from '../site/ars.js';
-import {createTrainer} from '../site/trainer.js';
+import {createArs, createStats, residual, loadArs, normalizer} from '../site/ars.js';
+import {createTrainer, createBestTracker, residualPolicy} from '../site/trainer.js';
 
 // The LQR problem of ars.test.mjs, served through an asynchronous rollout pool whose episodes
 // finish in a scrambled order, as parallel workers do.
@@ -101,4 +101,57 @@ test('Stop that lands during the post-update evaluation keeps that completed ite
   const history = await trainer.run(5);
   assert.equal(history.length, 1);
   assert.equal(ars.iteration(), 1);
+});
+
+// The best evaluated checkpoint. Evaluations are every perIteration-th rollout call; `scripted`
+// replaces those evaluation returns (and optionally candidate returns) to force a regression.
+const bestPerIteration = 2 * config.directions + 1;
+function scriptedRollout({evaluations = [], candidate = () => null, refuse = () => false, seen = []}) {
+  const healthy = lqrRollout([0]);
+  let calls = 0;
+  return async policy => {
+    const n = ++calls, isEvaluation = n % bestPerIteration === 0, k = n / bestPerIteration - 1;
+    if (refuse(n)) throw Error('The training pool is closed: a training worker crashed.');
+    const result = await healthy(policy);
+    if (isEvaluation) { seen.push({iteration: k + 1, policy}); if (k < evaluations.length) return {...result, value: evaluations[k], progress: evaluations[k]}; }
+    else { const override = candidate(n); if (override !== null) return {...result, value: override}; }
+    return result;
+  };
+}
+
+test('a later regression keeps the earlier best complete checkpoint, and training continues from the current learner', async () => {
+  const ars = createArs(config), best = createBestTracker(), atIteration = {};
+  const trainer = createTrainer({ars, best, rollout: scriptedRollout({evaluations: [1, 3, 2, 2.5]})});
+  await trainer.run(4, entry => { atIteration[entry.iteration] = ars.save(); });
+  const kept = best.best();
+  assert.equal(kept.iteration, 2);
+  assert.equal(kept.evaluation, 3);
+  assert.deepEqual(kept.checkpoint, atIteration[2], 'the whole learner as it was right after iteration 2 committed');
+  assert.equal(ars.iteration(), 4, 'no rollback: the learner is still at iteration 4');
+  assert.deepEqual(ars.save(), atIteration[4]);
+});
+
+test('the best checkpoint carries the normalization its evaluated weights were evaluated with', async () => {
+  const ars = createArs(config), best = createBestTracker(), seen = [];
+  await createTrainer({ars, best, rollout: scriptedRollout({evaluations: [1, 3, 2], seen})}).run(3);
+  const kept = best.best(), loaded = loadArs(kept.checkpoint);
+  const evaluated = seen.find(s => s.iteration === kept.iteration).policy;
+  assert.deepEqual(residualPolicy(loaded.weights(), normalizer(loaded.stats.snapshot())), evaluated);
+});
+
+test('an iteration that does not commit, or a better candidate return, never replaces the best', async () => {
+  const ars = createArs(config), best = createBestTracker();
+  // Iteration 2: one candidate returns 100, then its mean evaluation is refused.
+  const trainer = createTrainer({ars, best, rollout: scriptedRollout({evaluations: [1, 50],
+    candidate: n => (n === bestPerIteration + 1 ? 100 : null), refuse: n => n === 2 * bestPerIteration})});
+  await assert.rejects(trainer.run(3), /crashed/);
+  const kept = best.best();
+  assert.equal(kept.iteration, 1);
+  assert.equal(kept.evaluation, 1, 'neither the candidate 100 nor the uncommitted iteration counts');
+  assert.equal(ars.iteration(), 1);
+  // A tie does not replace: the earliest best stays.
+  assert.equal(best.offer({iteration: 9, evaluation: 1, progress: 1}, ars.save()), false);
+  // The tracker hands out copies: mutating one cannot alter the kept checkpoint.
+  kept.checkpoint.weights[0] = 123;
+  assert.notEqual(best.best().checkpoint.weights[0], 123);
 });
