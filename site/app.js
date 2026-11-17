@@ -601,7 +601,7 @@ async function initializeView() {
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1;
-  const soundtrack=createSoundtrack({audio:$('soundtrack'),button:$('music-toggle'),storage:{getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)}});
+  const soundtrack=createSoundtrack({audio:$('soundtrack'),src:$('soundtrack').dataset.src,button:$('music-toggle'),storage:{getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)}});
   const arena=createPollenScene(scene,renderer),shell=createSceneShell(document,{onEnter:()=>{soundtrack.start();enterSimulation().catch(prepareFailed);}});
   container.append(renderer.domElement);
   const controls=new OrbitControls(camera,renderer.domElement);
