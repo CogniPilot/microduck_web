@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Microduck · train in the browser · Rumoca compiler · CogniPilot</title>
+<meta name="description" content="Train a residual on Microduck's walking policy in the browser, against the whole-system FMU compiled by Rumoca.">
+<link rel="stylesheet" href="./style.css"></head>
+<body>
+<main class="training">
+<h1>Train Microduck in the browser</h1>
+<p>Augmented Random Search (V2-t, with an ARS-inspired observation normalization: coordinates that have not varied are masked, and each normalized input is clipped to ±5) learns a linear correction (14 × 61 weights) added to the pretrained walking policy. Every
+episode is a real run of the whole-system FMU, from reset, for 3 s at 0.3 m/s forward command. The return is the
+trunk's forward progress, minus a small cost on the correction and a penalty for falling. Training happens in
+separate workers; the walking demo is unaffected.</p>
+<p><label>Iterations <input id="train-iterations" type="number" min="1" value="5"></label>
+</p>
+<p><button id="train-start">Train</button> <button id="train-stop" disabled>Stop</button>
+<button id="train-evaluate">Evaluate</button> <button id="train-save">Save policy</button>
+<button id="train-restore">Restore saved policy</button></p>
+<p class="muted">Stop ends training at once: the running iteration is dropped and the learner keeps its last completed iteration. Training uses one worker.</p>
+<p id="train-status" role="status">Ready.</p>
+<pre id="train-log" aria-live="polite"></pre>
+<p><a href="./">Back to the simulator</a></p>
+</main>
+<script type="module" src="./train.js"></script>
+</body></html>
