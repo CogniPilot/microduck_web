@@ -1,0 +1,21 @@
+also-sprach-zarathustra.mp3
+
+Richard Strauss, "Also sprach Zarathustra" (1896), introduction.
+Conducted by Philip Milman; funded by Ludwig Ahgren and Jschlatt
+(Lud and Schlatts Musical Emporium).
+
+License: Creative Commons Attribution 3.0 (CC BY 3.0),
+https://creativecommons.org/licenses/by/3.0/
+as stated in the description of the publisher's video,
+https://www.youtube.com/watch?v=9K3GQdD30F0
+
+Source: the conductor's official download, https://pmmusic.pro/downloads/
+WAV master https://pmmusic.pro/wp-content/uploads/2023/09/Also-Sprach-Zarathustra-PM-Music.wav
+(24-bit, 48 kHz, stereo, 108 s, 31,104,898 bytes, SHA-1 492c0d41b2d769a6b32bead07b07b9077d104b23;
+the same file is on Wikimedia Commons as
+File:Richard_Strauss_-_Also_Sprach_Zarathustra_-_Phillip_Milman_-_Lud_and_Schlatts_Musical_Emporium.wav).
+
+Changes: encoded from that WAV to a 160 kbps CBR stereo MP3 at 48 kHz with lamejs 1.2.1
+(samples rounded from 24 to 16 bits); 2,160,480 bytes,
+SHA-256 992cd80aaf3eeec3c945516bc87c15ee5622b484530440f0b077459313b1cb55.
+The page loops it in the background; visitors can turn it off.
