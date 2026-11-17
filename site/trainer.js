@@ -12,7 +12,26 @@ export function residualPolicy(weights, scale) {
   return {weights: Array.from(weights), mean: Array.from(scale.mean), scale: Array.from(scale.scale)};
 }
 
-export function createTrainer({ars, rollout}) {
+// The best evaluated complete learner so far: the whole checkpoint (W, normalization
+// statistics, random state, configuration, iteration) of the iteration whose committed
+// mean-policy evaluation has the highest return. A candidate episode's return never counts, and
+// an iteration that does not complete never reaches it. It only records: training always
+// continues from the current learner.
+export function createBestTracker() {
+  let best = null;
+  return {
+    offer(entry, checkpoint) {
+      if (!Number.isFinite(entry.evaluation)) return false;
+      if (best && !(entry.evaluation > best.evaluation)) return false;
+      best = {iteration: entry.iteration, evaluation: entry.evaluation, progress: entry.progress, checkpoint: structuredClone(checkpoint)};
+      return true;
+    },
+    best: () => best && {...best, checkpoint: structuredClone(best.checkpoint)},
+    reset() { best = null; }
+  };
+}
+
+export function createTrainer({ars, rollout, best = null}) {
   let stopped = false;
   const history = [];
   const evaluate = () => rollout(residualPolicy(ars.weights(), normalizer(ars.stats.snapshot())));
@@ -42,6 +61,8 @@ export function createTrainer({ars, rollout}) {
           entry = {iteration: ars.iteration(), evaluation: evaluation.value, progress: evaluation.progress,
             fell: evaluation.fell, best: Math.max(...returns.flatMap(r => [r.plus, r.minus])), spread, updated};
         } catch (error) { ars.restore(checkpoint); throw error; }
+        // Committed: the learner now is exactly what this entry evaluated.
+        best?.offer(entry, ars.save());
         history.push(entry);
         onIteration({...entry});
       }
