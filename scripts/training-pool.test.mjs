@@ -65,10 +65,42 @@ test('a refused rollout rejects only itself; close rejects the rest and stops th
   await assert.rejects(pool.rollout('walkForward', null), /closed/);
 });
 
-test('a worker that never answers times out instead of hanging training', async () => {
+test('a worker that never answers times out and closes the pool: nothing more runs on it', async () => {
+  let terminated = 0;
   const pool = createTrainingPool({size: 1, prepare, timeoutMs: 20,
-    createWorker: () => ({postMessage(m) { if (m.type === 'prepare') queueMicrotask(() => this.onmessage({data: {id: m.id, result: {}}})); }, terminate() {}})});
+    createWorker: () => ({postMessage(m) { if (m.type === 'prepare') queueMicrotask(() => this.onmessage({data: {id: m.id, result: {}}})); }, terminate() { terminated++; }})});
   await pool.start();
-  await assert.rejects(pool.rollout('walkForward', null), /timed out/);
+  const running = pool.rollout('walkForward', null), queued = pool.rollout('walkForward', null);
+  await assert.rejects(running, /timed out/);
+  await assert.rejects(queued, /closed: a training worker timed out/);
+  assert.equal(terminated, 1);
+  assert.equal(pool.closed(), 'a training worker timed out');
+  await assert.rejects(pool.rollout('walkForward', null), /closed/);
+});
+
+test('a crashed worker closes the pool and rejects its running rollout', async () => {
+  const f = fakeWorkers({delay: 50}), pool = createTrainingPool({size: 1, createWorker: f.createWorker, prepare});
+  await pool.start();
+  const running = pool.rollout('walkForward', {weights: [1]});
+  f.made[0].onerror(new Event('error'));
+  await assert.rejects(running, /closed: a training worker crashed/);
+  assert.ok(f.made[0].terminated);
+});
+
+test('a failed preparation closes the pool', async () => {
+  const pool = createTrainingPool({size: 2, prepare,
+    createWorker: () => ({postMessage(m) { queueMicrotask(() => this.onmessage({data: {id: m.id, error: 'FMU did not load'}})); }, terminate() {}})});
+  await assert.rejects(pool.start(), /FMU did not load/);
+  assert.equal(pool.closed(), 'worker preparation failed');
+  await assert.rejects(pool.rollout('walkForward', null), /closed/);
+});
+
+test('Stop closes the pool at once, without waiting for the running episode', async () => {
+  const f = fakeWorkers({delay: 10000}), pool = createTrainingPool({size: 1, createWorker: f.createWorker, prepare});
+  await pool.start();
+  const running = pool.rollout('walkForward', {weights: [1]}), started = Date.now();
   pool.close();
+  await assert.rejects(running, /closed: stopped/);
+  assert.ok(Date.now() - started < 1000);
+  assert.ok(f.made[0].terminated);
 });

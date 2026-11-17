@@ -52,3 +52,18 @@ test('stop ends training after the current iteration without applying a partial 
   assert.equal(history.length, 3);
   assert.equal(ars.iteration(), 3);
 });
+
+test('a pool closed mid-iteration (Stop or a failed worker) drops that iteration whole', async () => {
+  const ars = createArs(config), healthy = lqrRollout([0]);
+  let calls = 0;
+  // Iteration 3's sixth episode is refused, as a closed pool refuses every running episode.
+  const rollout = policy => (++calls === 2 * (2 * config.directions + 1) + 6 ? Promise.reject(Error('The training pool is closed: stopped.')) : healthy(policy));
+  const trainer = createTrainer({ars, rollout});
+  await trainer.run(2);
+  const weights = ars.weights(), stats = ars.stats.snapshot();
+  await assert.rejects(trainer.run(5), /closed: stopped/);
+  assert.equal(ars.iteration(), 2, 'the learner keeps its last completed iteration');
+  assert.deepEqual(ars.weights(), weights);
+  assert.deepEqual(ars.stats.snapshot(), stats);
+  ars.propose();
+});

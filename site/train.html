@@ -6,16 +6,16 @@
 <body>
 <main class="training">
 <h1>Train Microduck in the browser</h1>
-<p>Augmented Random Search (V2-t, with an ARS-inspired observation normalization) learns a linear correction (14 × 61 weights) added to the pretrained walking policy. Every
+<p>Augmented Random Search (V2-t, with an ARS-inspired observation normalization: coordinates that have not varied are masked, and each normalized input is clipped to ±5) learns a linear correction (14 × 61 weights) added to the pretrained walking policy. Every
 episode is a real run of the whole-system FMU, from reset, for 3 s at 0.3 m/s forward command. The return is the
 trunk's forward progress, minus a small cost on the correction and a penalty for falling. Training happens in
 separate workers; the walking demo is unaffected.</p>
 <p><label>Iterations <input id="train-iterations" type="number" min="1" value="5"></label>
-<label>Workers <input id="train-workers" type="number" min="1" max="8" value="1"></label></p>
+</p>
 <p><button id="train-start">Train</button> <button id="train-stop" disabled>Stop</button>
 <button id="train-evaluate">Evaluate</button> <button id="train-save">Save policy</button>
 <button id="train-restore">Restore saved policy</button></p>
-<p class="muted">Stop takes effect when the running iteration's episodes finish; that iteration is dropped.</p>
+<p class="muted">Stop ends training at once: the running iteration is dropped and the learner keeps its last completed iteration. Training uses one worker.</p>
 <p id="train-status" role="status">Ready.</p>
 <pre id="train-log" aria-live="polite"></pre>
 <p><a href="./">Back to the simulator</a></p>

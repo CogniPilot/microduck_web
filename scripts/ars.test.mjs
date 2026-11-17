@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRandom, createStats, normalizer, residual, createArs, loadArs, MASK_STD, CLIP_NORMALIZED, MIN_SPREAD} from '../site/ars.js';
+import {createRandom, createStats, normalizer, residual, createArs, loadArs, MASK_STD, CLIP_NORMALIZED, NORMALIZATION, MIN_SPREAD, SAVE_VERSION} from '../site/ars.js';
 
 test('the random stream is reproducible from its seed and from a snapshot', () => {
   const a = createRandom(7), b = createRandom(7);
@@ -143,6 +143,38 @@ test('a normalized coordinate is clipped to ±CLIP_NORMALIZED', () => {
   assert.deepEqual(Array.from(residual(Float64Array.of(1, 1), scale, [1, 2], 1)), [CLIP_NORMALIZED + 2]);
   assert.deepEqual(Array.from(residual(Float64Array.of(1, 1), scale, [-1, -2], 1)), [-CLIP_NORMALIZED - 2]);
   assert.deepEqual(Array.from(residual(Float64Array.of(0, 0), scale, [1, 2], 1)), [0], 'W = 0 is still exactly zero');
+});
+
+test('tiny-std witness: a coordinate that barely varied is clipped, not blown up', () => {
+  // Gravity z after the first acceptance iteration: std about 4e-4 around -0.9991.
+  const stats = createStats(2);
+  for (let k = 0; k < 150; k++) stats.add([-0.9991 + 4e-4 * Math.sin(k), k % 2]);
+  const scale = normalizer(stats.snapshot());
+  assert.ok(scale.scale[0] > 1000, 'the coordinate is not masked: its std is above MASK_STD');
+  // A change of 0.01 is 25 standard deviations; unclipped it would give 25.
+  const out = residual(Float64Array.of(1, 0), scale, [-0.9991 + 0.01, 0], 1);
+  assert.ok(Math.abs(out[0] - CLIP_NORMALIZED) < 1e-9, 'clipped to +5: ' + out[0]);
+});
+
+test('saved policies carry the exact learner version and normalization, and metadata cannot replace state', () => {
+  const ars = createArs({actions: 1, observations: 2, directions: 2, top: 1});
+  const saved = ars.save({task: 'walkForward'});
+  assert.equal(saved.version, SAVE_VERSION);
+  assert.equal(saved.normalization, NORMALIZATION);
+  assert.equal(saved.task, 'walkForward');
+  for (const key of ['weights', 'iteration', 'stats', 'random', 'version', 'normalization'])
+    assert.throws(() => ars.save({[key]: 0}), /metadata may not set/, key);
+  assert.throws(() => loadArs({...saved, version: 1}), /another version/);
+  assert.throws(() => loadArs({...saved, normalization: 'mask only'}), /another version/);
+  loadArs(saved);
+});
+
+test('saved statistics must be what a real accumulator can hold', () => {
+  const saved = createArs({actions: 1, observations: 2, directions: 2, top: 1}).save();
+  assert.throws(() => loadArs({...saved, stats: {count: 0, mean: [1, 0], m2: [0, 0]}}), /mean without samples/);
+  assert.throws(() => loadArs({...saved, stats: {count: 1, mean: [1, 0], m2: [2, 0]}}), /spread without two samples/);
+  loadArs({...saved, stats: {count: 1, mean: [1, 0], m2: [0, 0]}});
+  loadArs({...saved, stats: {count: 2, mean: [1, 0], m2: [2, 0]}});
 });
 
 test('the configuration must be integer-sized, finite and positive', () => {

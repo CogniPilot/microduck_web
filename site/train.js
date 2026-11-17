@@ -8,9 +8,9 @@ import {TASKS} from './rollout.js';
 import {fetchWithRetry} from './fetch-retry.js';
 
 const $ = id => document.getElementById(id);
-const TASK = 'walkForward', SAVE_KEY = 'microduck-training-v1', MAX_SAVED_BYTES = 200000;
+const TASK = 'walkForward', SAVE_KEY = 'microduck-training-v2', MAX_SAVED_BYTES = 200000, WORKERS = 1;
 const config = {actions: 14, observations: 61, directions: 8, top: 4, stepSize: 0.02, noise: 0.03, seed: 1};
-let pool, ars = createArs(config), trainer, baseline = null, running = false;
+let pool, ars = createArs(config), trainer, baseline = null, running = false, stopping = false;
 
 const log = line => { $('train-log').textContent += line + '\n'; };
 const status = text => { $('train-status').textContent = text; };
@@ -34,21 +34,27 @@ async function pageSources() {
 
 async function ensurePool() {
   if (pool) return;
-  const size = Math.max(1, Math.min(8, Number($('train-workers').value) || 1));
-  status('Preparing ' + size + ' training worker' + (size > 1 ? 's' : '') + '…');
+  status('Preparing the training worker…');
   const started = performance.now(), sources = await pageSources();
-  pool = createTrainingPool({size, prepare: {type: 'prepare', sources, model: 'MicroduckJawLocked', requireFmu: true},
+  // One worker: the qualified configuration. A failed preparation closes the pool; the next
+  // Train or Evaluate prepares a fresh one.
+  const next = createTrainingPool({size: WORKERS, prepare: {type: 'prepare', sources, model: 'MicroduckJawLocked', requireFmu: true},
     createWorker: () => new Worker(new URL('./physics.worker.js', import.meta.url), {type: 'module'})});
-  await pool.start();
-  log(`workers ready: ${size} in ${((performance.now() - started) / 1000).toFixed(1)} s`);
+  await next.start();
+  pool = next;
+  log(`worker ready in ${((performance.now() - started) / 1000).toFixed(1)} s`);
 }
 
 const rollout = policy => pool.rollout(TASK, policy);
+// After Stop or any failure the pool is closed and dropped: no queued episode keeps running,
+// and the learner keeps its last completed iteration.
+const dropPool = reason => { pool?.close(reason); pool = undefined; };
 const current = () => residualPolicy(ars.weights(), normalizer(ars.stats.snapshot()));
 const describe = r => `return ${r.value.toFixed(4)} · progress ${r.progress.toFixed(4)} m · ${r.fell === null ? 'no fall' : 'fell at tick ' + r.fell}`;
 
 async function train() {
   busy(true);
+  stopping = false;
   try {
     await ensurePool();
     trainer = createTrainer({ars, rollout});
@@ -67,12 +73,17 @@ async function train() {
       globalThis.microduckTraining.history.push(entry);
     });
     status(`Trained to iteration ${ars.iteration()}.`);
-  } catch (error) { status('Training stopped: ' + error.message); log('error: ' + error.message); }
+  } catch (error) {
+    dropPool('training failed');
+    if (stopping) { status(`Stopped. The learner keeps iteration ${ars.iteration()}.`); log(`stopped at iteration ${ars.iteration()}`); }
+    else { status('Training stopped: ' + error.message); log('error: ' + error.message); }
+  }
   finally { busy(false); }
 }
 
 async function evaluate() {
   busy(true);
+  stopping = false;
   // A failed evaluation leaves no result, never the previous one.
   globalThis.microduckTraining.lastEvaluation = null;
   try {
@@ -81,7 +92,7 @@ async function evaluate() {
     log(`evaluation at iteration ${ars.iteration()}: ${describe(result)}`);
     globalThis.microduckTraining.lastEvaluation = result;
     status('Evaluated.');
-  } catch (error) { status('Evaluation failed: ' + error.message); }
+  } catch (error) { dropPool('evaluation failed'); status(stopping ? 'Stopped.' : 'Evaluation failed: ' + error.message); }
   finally { busy(false); }
 }
 
@@ -113,8 +124,8 @@ function restoreSaved() {
 }
 
 $('train-start').onclick = train;
-// Stop takes effect when the running iteration's episodes finish; that iteration is dropped.
-$('train-stop').onclick = () => { trainer?.stop(); status('Stopping when the running episodes finish…'); };
+// Stop closes the worker at once; the running iteration is dropped.
+$('train-stop').onclick = () => { stopping = true; trainer?.stop(); dropPool('stopped'); status('Stopping…'); };
 $('train-evaluate').onclick = evaluate;
 $('train-save').onclick = save;
 $('train-restore').onclick = () => { try { restoreSaved(); status('Restored.'); } catch (error) { status('Restore failed: ' + error.message); } };

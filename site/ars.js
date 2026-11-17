@@ -68,6 +68,9 @@ export function createStats(size) {
 // the first iteration) would otherwise scale a small deviation into an input in the thousands,
 // and the residual cost of such a candidate swamps every return in the iteration.
 export const MASK_STD = 1e-8, CLIP_NORMALIZED = 5;
+// The exact normalization a saved policy was trained with; a policy saved under another rule
+// would act differently here, so loading requires this label.
+export const NORMALIZATION = 'ars-inspired: mask std<1e-8 or count<2, clip normalized to ±5';
 export function normalizer({count, mean, m2}) {
   const scale = Float64Array.from(m2, value => {
     const std = count > 1 ? Math.sqrt(value / count) : 0;
@@ -90,7 +93,7 @@ export function residual(weights, scale, observation, actions) {
 
 // A learner, new or continued from `saved` (a value returned by save()).
 // Returns below this spread carry no usable direction: the update keeps W (NOUPDATE).
-export const MIN_SPREAD = 1e-12;
+export const MIN_SPREAD = 1e-12, SAVE_VERSION = 2;
 const positiveInteger = value => Number.isInteger(value) && value >= 1;
 const finitePositive = value => Number.isFinite(value) && value > 0;
 
@@ -150,12 +153,16 @@ export function createArs({actions, observations, directions = 8, top = 4, stepS
       outstanding = null;
       return {chosen, spread, updated: factor > 0};
     },
-    // Everything needed to evaluate or continue the learned policy, as plain JSON.
-    save: meta => {
+    // Everything needed to evaluate or continue the learned policy, as plain JSON. `meta` adds
+    // descriptive fields only; it can never replace the learner's own state.
+    save: (meta = {}) => {
       if (outstanding) throw Error('ARS can only be saved between iterations.');
-      return {format: 'microduck-ars', version: 1, actions, observations, directions, top, stepSize, noise, seed,
-      iteration, random: random.snapshot(), weights: Array.from(weights),
-      stats: (({count, mean, m2}) => ({count, mean: Array.from(mean), m2: Array.from(m2)}))(stats.snapshot()), ...meta};
+      const core = {format: 'microduck-ars', version: SAVE_VERSION, normalization: NORMALIZATION, actions, observations, directions, top,
+        stepSize, noise, seed, iteration, random: random.snapshot(), weights: Array.from(weights),
+        stats: (({count, mean, m2}) => ({count, mean: Array.from(mean), m2: Array.from(m2)}))(stats.snapshot())};
+      const clash = Object.keys(meta).find(key => key in core);
+      if (clash !== undefined) throw Error('Saved-policy metadata may not set ' + clash + '.');
+      return {...meta, ...core};
     }
   };
 }
@@ -171,6 +178,9 @@ function checkSaved(saved, config) {
   const s = saved.stats;
   if (!s || !(Number.isInteger(s.count) && s.count >= 0)) fail('statistics count');
   if (!finite(s.mean) || s.mean.length !== config.observations || !finite(s.m2) || s.m2.length !== config.observations || !s.m2.every(v => v >= 0)) fail('statistics');
+  // What a real accumulator can hold: no samples means zero mean and spread; one sample, zero spread.
+  if (s.count === 0 && !s.mean.every(v => v === 0)) fail('statistics mean without samples');
+  if (s.count < 2 && !s.m2.every(v => v === 0)) fail('statistics spread without two samples');
   const r = saved.random;
   if (!r || !(Number.isInteger(r.state) && r.state >= 0 && r.state <= 0xffffffff) || !(r.spare === null || Number.isFinite(r.spare))) fail('random state');
 }
@@ -178,6 +188,8 @@ function checkSaved(saved, config) {
 // Restores a saved learner. With `config`, the saved learner must have been made with exactly
 // that configuration; without it, its own recorded configuration is used.
 export function loadArs(saved, config = saved) {
-  if (saved?.format !== 'microduck-ars' || saved.version !== 1) throw Error('Not a saved microduck ARS policy.');
+  if (saved?.format !== 'microduck-ars') throw Error('Not a saved microduck ARS policy.');
+  if (saved.version !== SAVE_VERSION || saved.normalization !== NORMALIZATION)
+    throw Error('This saved policy was trained with another version of the learner.');
   return createArs(config, saved);
 }
