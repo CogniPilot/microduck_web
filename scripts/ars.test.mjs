@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRandom, createStats, normalizer, residual, createArs, loadArs} from '../site/ars.js';
+import {createRandom, createStats, normalizer, residual, createArs, loadArs, MASK_STD} from '../site/ars.js';
 
 test('the random stream is reproducible from its seed and from a snapshot', () => {
   const a = createRandom(7), b = createRandom(7);
@@ -83,7 +83,7 @@ function riccatiGain() {
 test('ARS learns most of the way from a weak controller to the optimal LQR return', () => {
   const ars = createArs({actions: 1, observations: 2, directions: 8, top: 4, stepSize: 0.05, noise: 0.05, seed: 5});
   const evaluate = weights => {
-    const scale = {mean: Float64Array.of(0, 0), std: Float64Array.of(1, 1)};
+    const scale = {mean: Float64Array.of(0, 0), scale: Float64Array.of(1, 1)};
     return episode(x => base(x) + residual(weights, scale, x, 1)[0]);
   };
   // Observation normalization is frozen per iteration; this problem's scale is already unit.
@@ -122,4 +122,16 @@ test('a saved learner continues exactly as an uninterrupted one', () => {
   assert.equal(resumed.iteration(), 6);
   assert.deepEqual(resumed.save(), straight.save());
   assert.throws(() => loadArs({format: 'other'}), /Not a saved/);
+});
+
+test('near-constant or unseen coordinates are masked (scale 0), as in ARS V2', () => {
+  assert.deepEqual(Array.from(normalizer(createStats(3).snapshot()).scale), [0, 0, 0], 'no samples: everything masked');
+  const stats = createStats(3);
+  for (const row of [[1, 5, 2], [3, 5, 2 + MASK_STD / 10], [5, 5, 2]]) stats.add(row);
+  const scale = normalizer(stats.snapshot());
+  assert.ok(Math.abs(scale.scale[0] - 1 / Math.sqrt(8 / 3)) < 1e-12);
+  assert.equal(scale.scale[1], 0);
+  assert.equal(scale.scale[2], 0);
+  const out = residual(Float64Array.of(2, 1e9, 1e9), scale, [5, 1e12, -1e12], 1);
+  assert.ok(Math.abs(out[0] - 2 * (5 - 3) * scale.scale[0]) < 1e-12, 'masked coordinates contribute nothing, even when huge');
 });

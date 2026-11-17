@@ -6,7 +6,7 @@ import {normalizer} from './ars.js';
 // saved policy carries (the statistics after this iteration's merge). Results depend only on
 // the candidates, never on which rollout finished first.
 export function residualPolicy(weights, scale) {
-  return {weights: Array.from(weights), mean: Array.from(scale.mean), std: Array.from(scale.std)};
+  return {weights: Array.from(weights), mean: Array.from(scale.mean), scale: Array.from(scale.scale)};
 }
 
 export function createTrainer({ars, rollout}) {

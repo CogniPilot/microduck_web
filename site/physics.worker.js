@@ -21,8 +21,8 @@ let previous=new Float32Array(14),previousCommand=new Float64Array(3),previousPo
 // The last tick's policy observation and learned residual, read by training rollouts.
 let lastObservation,lastResidual;
 function checkedResidual(policy){
- if(!Array.isArray(policy?.weights)||policy.weights.length!==14*61||!Array.isArray(policy.mean)||policy.mean.length!==61||!Array.isArray(policy.std)||policy.std.length!==61||
-  ![...policy.weights,...policy.mean,...policy.std].every(Number.isFinite)||!policy.std.every(value=>value>0))throw Error('Invalid trained residual policy.');
+ if(!Array.isArray(policy?.weights)||policy.weights.length!==14*61||!Array.isArray(policy.mean)||policy.mean.length!==61||!Array.isArray(policy.scale)||policy.scale.length!==61||
+  ![...policy.weights,...policy.mean,...policy.scale].every(Number.isFinite)||!policy.scale.every(value=>value>=0))throw Error('Invalid trained residual policy.');
  return policy;
 }
 

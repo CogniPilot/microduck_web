@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createArs, residual} from '../site/ars.js';
+import {createArs, createStats, residual} from '../site/ars.js';
 import {createTrainer} from '../site/trainer.js';
 
 // The LQR problem of ars.test.mjs, served through an asynchronous rollout pool whose episodes
@@ -13,13 +13,16 @@ function lqrRollout(delays) {
     const wait = delays[call++ % delays.length];
     await new Promise(resolve => setTimeout(resolve, wait));
     let x = [1, 0], cost = 0;
-    const stats = {count: 0, mean: [0, 0], m2: [0, 0]};
+    // The visited states, as a real rollout reports them for the learner's normalization.
+    const visited = createStats(2);
     for (let t = 0; t < horizon; t++) {
+      visited.add(x);
       const u = base(x) + residual(policy.weights, policy, x, 1)[0];
       cost += x[0] * x[0] + x[1] * x[1] + 0.1 * u * u;
       x = [x[0] + dt * x[1] + B[0] * u, x[1] + B[1] * u];
     }
-    return {value: -cost, progress: -cost, fell: null, stats};
+    const {count, mean, m2} = visited.snapshot();
+    return {value: -cost, progress: -cost, fell: null, stats: {count, mean: Array.from(mean), m2: Array.from(m2)}};
   };
 }
 const config = {actions: 1, observations: 2, directions: 8, top: 4, stepSize: 0.05, noise: 0.05, seed: 5};

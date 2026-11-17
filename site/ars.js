@@ -57,18 +57,24 @@ export function createStats(size) {
   };
 }
 
-// Mean and standard deviation used to normalize observations; a coordinate that has not varied
-// keeps a unit scale, so it neither explodes nor silences its weights.
-export function normalizer({count, mean, m2}, minStd = 1e-2) {
-  const std = Float64Array.from(m2, value => count > 1 ? Math.max(Math.sqrt(value / count), minStd) : 1);
-  return {mean: Float64Array.from(mean), std};
+// Observation normalization of ARS V2: x -> (x - mean) * scale with scale = 1 / std. As in the
+// paper's implementation, a near-constant coordinate (std < 1e-8), or any coordinate before two
+// samples exist, is masked with scale 0: it contributes nothing, so constant or empty statistics
+// stay finite and W = 0 still reproduces the pretrained action exactly.
+export const MASK_STD = 1e-8;
+export function normalizer({count, mean, m2}) {
+  const scale = Float64Array.from(m2, value => {
+    const std = count > 1 ? Math.sqrt(value / count) : 0;
+    return std >= MASK_STD ? 1 / std : 0;
+  });
+  return {mean: Float64Array.from(mean), scale};
 }
 
-// The residual W * ((observation - mean) / std).
+// The residual W * ((observation - mean) * scale).
 export function residual(weights, scale, observation, actions) {
   const columns = observation.length, out = new Float64Array(actions);
   for (let i = 0; i < columns; i++) {
-    const x = (observation[i] - scale.mean[i]) / scale.std[i];
+    const x = scale.scale[i] === 0 ? 0 : (observation[i] - scale.mean[i]) * scale.scale[i];
     if (x === 0) continue;
     for (let a = 0; a < actions; a++) out[a] += weights[a * columns + i] * x;
   }
