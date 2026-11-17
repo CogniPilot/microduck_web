@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRandom, createStats, normalizer, residual, createArs, loadArs, MASK_STD, MIN_SPREAD} from '../site/ars.js';
+import {createRandom, createStats, normalizer, residual, createArs, loadArs, MASK_STD, CLIP_NORMALIZED, MIN_SPREAD} from '../site/ars.js';
 
 test('the random stream is reproducible from its seed and from a snapshot', () => {
   const a = createRandom(7), b = createRandom(7);
@@ -135,6 +135,14 @@ test('near-constant or unseen coordinates are masked (scale 0), as in ARS V2', (
   assert.equal(scale.scale[2], 0);
   const out = residual(Float64Array.of(2, 1e9, 1e9), scale, [5, 1e12, -1e12], 1);
   assert.ok(Math.abs(out[0] - 2 * (5 - 3) * scale.scale[0]) < 1e-12, 'masked coordinates contribute nothing, even when huge');
+});
+
+test('a normalized coordinate is clipped to ±CLIP_NORMALIZED', () => {
+  // std 1e-4: a deviation of 1 would be 1e4 standard deviations.
+  const scale = {mean: Float64Array.of(0, 0), scale: Float64Array.of(1e4, 1)};
+  assert.deepEqual(Array.from(residual(Float64Array.of(1, 1), scale, [1, 2], 1)), [CLIP_NORMALIZED + 2]);
+  assert.deepEqual(Array.from(residual(Float64Array.of(1, 1), scale, [-1, -2], 1)), [-CLIP_NORMALIZED - 2]);
+  assert.deepEqual(Array.from(residual(Float64Array.of(0, 0), scale, [1, 2], 1)), [0], 'W = 0 is still exactly zero');
 });
 
 test('the configuration must be integer-sized, finite and positive', () => {

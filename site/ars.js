@@ -63,8 +63,11 @@ export function createStats(size) {
 // scale = 1 / std, and a coordinate with std < 1e-8, or any coordinate before two samples
 // exist, is masked with scale 0. It contributes nothing, so constant or empty statistics stay
 // finite and W = 0 still reproduces the pretrained action exactly; the first iteration, with
-// no statistics yet, cannot move W.
-export const MASK_STD = 1e-8;
+// no statistics yet, cannot move W. A normalized coordinate is clipped to ±CLIP_NORMALIZED:
+// a coordinate that barely varied in the statistics so far (std about 4e-4 for gravity z after
+// the first iteration) would otherwise scale a small deviation into an input in the thousands,
+// and the residual cost of such a candidate swamps every return in the iteration.
+export const MASK_STD = 1e-8, CLIP_NORMALIZED = 5;
 export function normalizer({count, mean, m2}) {
   const scale = Float64Array.from(m2, value => {
     const std = count > 1 ? Math.sqrt(value / count) : 0;
@@ -73,11 +76,12 @@ export function normalizer({count, mean, m2}) {
   return {mean: Float64Array.from(mean), scale};
 }
 
-// The residual W * ((observation - mean) * scale).
+// The residual W * clip((observation - mean) * scale).
 export function residual(weights, scale, observation, actions) {
   const columns = observation.length, out = new Float64Array(actions);
   for (let i = 0; i < columns; i++) {
-    const x = scale.scale[i] === 0 ? 0 : (observation[i] - scale.mean[i]) * scale.scale[i];
+    const x = scale.scale[i] === 0 ? 0
+      : Math.min(CLIP_NORMALIZED, Math.max(-CLIP_NORMALIZED, (observation[i] - scale.mean[i]) * scale.scale[i]));
     if (x === 0) continue;
     for (let a = 0; a < actions; a++) out[a] += weights[a * columns + i] * x;
   }
